@@ -1,0 +1,2 @@
+# SPA fallback: serve the app shell for any path that isn't a real static file.
+/*  /index.html  200
