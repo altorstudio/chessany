@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Chessany</string>
+    <string name="title_activity_main">Chessany</string>
+    <string name="package_name">com.altorstudio.chessany</string>
+    <string name="custom_url_scheme">com.altorstudio.chessany</string>
+</resources>
