@@ -39,7 +39,9 @@ jobs:
         id: ndk
         with:
           ndk-version: r26d
-          local-cache: true
+          # Download fresh each run — the local cache can restore an incomplete
+          # toolchain (missing clang++), breaking the Stockfish cross-compile.
+          local-cache: false
 
       - run: npm ci
 
