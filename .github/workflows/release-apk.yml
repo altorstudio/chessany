@@ -71,6 +71,9 @@ jobs:
       - name: Build debug APK
         run: |
           chmod +x android/gradlew
+          # gradle.properties pins a local macOS JDK path (org.gradle.java.home);
+          # drop it in CI so Gradle uses JAVA_HOME from setup-java (JDK 21).
+          sed -i '/org\.gradle\.java\.home/d' android/gradle.properties
           cd android && ./gradlew assembleDebug --no-daemon
 
       - name: Name the APK
