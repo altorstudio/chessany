@@ -63,7 +63,7 @@ for ABI in $ABIS; do
   make -C "$WORK/sf/src" clean >/dev/null 2>&1 || true
   # KERNEL=Linux stops the Makefile from adding macOS-host flags
   # (-mdynamic-no-pic / -mmacosx-version-min) to the Android cross-compile.
-  make -C "$WORK/sf/src" -j"$(sysctl -n hw.ncpu)" build \
+  make -C "$WORK/sf/src" -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)" build \
     ARCH="$ARCH" COMP=ndk KERNEL=Linux CXX="$CXX"
   mkdir -p "$JNILIBS/$ABI"
   cp "$WORK/sf/src/stockfish" "$JNILIBS/$ABI/libstockfish.so"

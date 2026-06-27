@@ -1,0 +1,96 @@
+name: Release APK
+
+# Build the Android APK and attach it to a GitHub Release whenever a version tag
+# is pushed (e.g. `git tag v0.1.0 && git push --tags`). Manual runs (Actions tab)
+# build the APK and upload it as a downloadable artifact for testing — without
+# creating a release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write  # needed to create the Release
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The native engine + Gradle plugin require JDK 21.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install SDK platform & build-tools (compileSdk 36)
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      # NDK for cross-compiling Stockfish. Exposes ANDROID_NDK_HOME.
+      - uses: nttld/setup-ndk@v1
+        id: ndk
+        with:
+          ndk-version: r26d
+          local-cache: true
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # Cache the cross-compiled native lib so we don't rebuild Stockfish every
+      # release — keyed on the build script + Stockfish tag.
+      - name: Cache libstockfish.so
+        uses: actions/cache@v4
+        with:
+          path: android/app/src/main/jniLibs
+          key: stockfish-arm64-sf_17.1-${{ hashFiles('scripts/build-stockfish-android.sh') }}
+
+      - name: Build native Stockfish (if not cached)
+        env:
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          if [ -f android/app/src/main/jniLibs/arm64-v8a/libstockfish.so ]; then
+            echo "Using cached libstockfish.so"
+          else
+            ABIS="arm64-v8a" bash scripts/build-stockfish-android.sh
+          fi
+
+      - name: Sync web assets into the Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Name the APK
+        id: apk
+        run: |
+          VERSION="${GITHUB_REF_TYPE/tag/$GITHUB_REF_NAME}"
+          [ "$GITHUB_REF_TYPE" = "tag" ] && VERSION="$GITHUB_REF_NAME" || VERSION="dev-${GITHUB_SHA::7}"
+          OUT="chessany-${VERSION}.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Upload APK artifact (every run)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.version }}-apk
+          path: ${{ steps.apk.outputs.path }}
+
+      - name: Attach APK to the Release (tags only)
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.apk.outputs.path }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
