@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Chess } from "chess.js";
 import { useStore } from "../store";
 import { useFeedback } from "../feedback";
-import { createEngine } from "./registry";
+import { createEngine, getEngine, isNativeEngine } from "./registry";
 import type { Engine } from "./Engine";
 import { explainSingleMove, type PosInfo, type SingleMoveVerdict } from "../game/report";
 
@@ -28,7 +28,23 @@ export function useCoach(): (SingleMoveVerdict | null)[] {
   const coachPending = useStore((s) => s.coachPending);
   const [verdicts, setVerdicts] = useState<(SingleMoveVerdict | null)[]>([]);
   const engineRef = useRef<Engine | null>(null);
+  // True when the coach OWNS its engine (a dedicated web worker it may quit).
+  // On native the coach borrows the app-wide shared engine — quitting that
+  // would kill the single native host process and strand every other consumer
+  // (the post-game report would then hang forever at 0/N).
+  const ownedRef = useRef(false);
   const evalsRef = useRef<Map<number, PosInfo>>(new Map()); // ply → eval of that position
+
+  // Release the coach's engine: tear down an owned worker for good; merely
+  // interrupt (never kill) the shared native engine.
+  const releaseEngine = () => {
+    if (!engineRef.current) return;
+    try {
+      if (ownedRef.current) engineRef.current.quit();
+      else engineRef.current.stop();
+    } catch { /* ignore */ }
+    engineRef.current = null;
+  };
 
   // Safety net: never let a deferred engine reply hang if grading stalls.
   useEffect(() => {
@@ -40,24 +56,14 @@ export function useCoach(): (SingleMoveVerdict | null)[] {
     return () => clearTimeout(t);
   }, [coachPending]);
 
-  // Tear the engine down for good on unmount.
-  useEffect(
-    () => () => {
-      if (engineRef.current) {
-        try { engineRef.current.quit(); } catch { /* ignore */ }
-        engineRef.current = null;
-      }
-    },
-    [],
-  );
+  // Release the engine on unmount (quit if owned, stop if shared).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => () => releaseEngine(), []);
 
   useEffect(() => {
     const active = coach && mode === "play";
     if (!active) {
-      if (engineRef.current) {
-        try { engineRef.current.quit(); } catch { /* ignore */ }
-        engineRef.current = null;
-      }
+      releaseEngine();
       evalsRef.current.clear();
       setVerdicts([]);
       return;
@@ -118,7 +124,14 @@ export function useCoach(): (SingleMoveVerdict | null)[] {
     (async () => {
       let engine = engineRef.current;
       if (!engine) {
-        engine = createEngine(engineId, { Hash: 16 });
+        // Native runs ONE engine process for the whole app — a second instance
+        // would restart that host, and its quit() would kill it under every
+        // other consumer. Borrow the shared engine there (its search serializer
+        // interleaves coach searches with the bot's replies); the web gets a
+        // dedicated small-hash worker as before.
+        const native = isNativeEngine(engineId);
+        engine = native ? getEngine(engineId) : createEngine(engineId, { Hash: 16 });
+        ownedRef.current = !native;
         engineRef.current = engine;
         await engine.init();
       }
@@ -127,6 +140,13 @@ export function useCoach(): (SingleMoveVerdict | null)[] {
       for (let p = fens.length - 1; p >= 0; p--) {
         if (cancelled) return;
         if (evalsRef.current.has(p)) continue;
+        // On the shared engine, play mode re-applies UCI_LimitStrength/Elo
+        // before every bot reply — undo that before each grading search so the
+        // coach judges at full strength, not at the bot's ~800-Elo setting.
+        if (!ownedRef.current && engine.meta.supportsStrength) {
+          engine.setOption("UCI_LimitStrength", "false");
+          engine.setOption("Skill Level", 20);
+        }
         try {
           const lines = await engine.search(fens[p], { multipv: 1, depth: COACH_DEPTH, movetime: COACH_MOVETIME });
           if (cancelled) return;

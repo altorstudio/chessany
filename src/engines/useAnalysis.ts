@@ -36,6 +36,13 @@ export function useAnalysis(fen: string, screenEnabled: boolean): EngineInfo[] {
     (async () => {
       await engine.init();
       if (cancelled) return;
+      // The shared engine may still carry play mode's strength cap
+      // (UCI_LimitStrength / UCI_Elo) from a game vs the bot — clear it so the
+      // eval bar and lines reflect full-strength analysis, not ~800-Elo search.
+      if (engine.meta.supportsStrength) {
+        engine.setOption("UCI_LimitStrength", "false");
+        engine.setOption("Skill Level", 20);
+      }
       engine.analyze(fen, { multipv, movetime, hash: hashMb }, (info) => {
         if (cancelled) return;
         setLines((cur) => {

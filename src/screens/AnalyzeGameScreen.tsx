@@ -405,6 +405,17 @@ export function AnalyzeGameScreen() {
       setLoop(true);
       setAutoplay(true);
     });
+    // The shared native engine may still carry play mode's strength cap
+    // (UCI_LimitStrength / ~800 Elo) from a game just played against the bot —
+    // clear it before analyzing, or every eval in the report is bot-strength.
+    if (native) {
+      const engine = getEngine(engineId);
+      await engine.init();
+      if (engine.meta.supportsStrength) {
+        engine.setOption("UCI_LimitStrength", "false");
+        engine.setOption("Skill Level", 20);
+      }
+    }
     try {
       const rep = await generateReport(makeEngine, parsed, opts, (done, total) => {
         if (!controller.signal.aborted) setProgress({ done, total });
