@@ -359,7 +359,7 @@ function canCaptureSafely(b: Chess, sq: Square, byColor: "w" | "b"): boolean {
  * attack created by that move. `moverColor` is the side being forked. Returns
  * [] when the forking piece can simply be captured (then it isn't a real fork).
  */
-function forkTargets(fen: string, uci: string, moverColor: "w" | "b"): Array<{ word: string; val: number }> {
+function forkTargets(fen: string, uci: string, moverColor: "w" | "b"): Array<{ word: string; val: number; type: string }> {
   const to = uci.slice(2, 4) as Square;
   const b = new Chess(fen);
   try {
@@ -370,25 +370,90 @@ function forkTargets(fen: string, uci: string, moverColor: "w" | "b"): Array<{ w
   // If the mover can just take the forking piece, it's not a fork.
   if (canCaptureSafely(b, to, moverColor)) return [];
   const opp = moverColor === "w" ? "b" : "w";
-  const hits: Array<{ word: string; val: number }> = [];
+  const hits: Array<{ word: string; val: number; type: string }> = [];
   for (const file of "abcdefgh") {
     for (const rank of "12345678") {
       const sq = (file + rank) as Square;
       const p = b.get(sq);
       if (!p || p.color !== moverColor) continue;
       // Only count it as a prong if the freshly-moved piece (on `to`) attacks it.
-      if (b.attackers(sq, opp).includes(to)) hits.push({ word: pieceWord(p.type), val: PIECE_VALUE[p.type] });
+      if (b.attackers(sq, opp).includes(to)) hits.push({ word: pieceWord(p.type), val: PIECE_VALUE[p.type], type: p.type });
     }
   }
   return hits;
 }
 
 /**
+ * What VERIFIABLY happens to `side` when the engine's PV is played out from
+ * `fen`. Every claim a verdict makes must be corroborated against this: the
+ * refutation line is exactly what the user steps through ("see how it's
+ * punished"), so the words and the line must tell the same story — a static
+ * one-ply guess ("this hangs your queen") is worthless if the line itself shows
+ * the queen escaping or the material coming back.
+ */
+interface PvFacts {
+  /** How many PV plies actually replayed. */
+  plies: number;
+  /** `side`'s NET material loss over the line, in points (can be negative = side gains). */
+  drop: number;
+  /** Most valuable `side` piece that is actually gone at the end of the line. */
+  lost: string | null;
+  /** 0-based ply at which that piece was captured (-1 if unknown). */
+  lostAt: number;
+  /** The line ends with `side` checkmated. */
+  mated: boolean;
+  /** `side`'s opponent promotes a pawn somewhere in the line. */
+  oppPromotes: boolean;
+}
+
+function pvFacts(fen: string, pv: string[], side: "w" | "b", max = 12): PvFacts | null {
+  let start: Chess;
+  try {
+    start = new Chess(fen);
+  } catch {
+    return null;
+  }
+  const leaf = new Chess(fen);
+  const opp: "w" | "b" = side === "w" ? "b" : "w";
+  let plies = 0;
+  let oppPromotes = false;
+  const capturedAt: Record<string, number> = {}; // side's piece type → first ply it was taken
+  for (const u of pv.slice(0, max)) {
+    let mv;
+    try {
+      mv = leaf.move({ from: u.slice(0, 2) as Square, to: u.slice(2, 4) as Square, promotion: (u[4] as "q") ?? "q" });
+    } catch {
+      break;
+    }
+    if (!mv) break;
+    if (mv.captured && mv.color === opp && capturedAt[mv.captured] === undefined) capturedAt[mv.captured] = plies;
+    if (mv.promotion && mv.color === opp) oppPromotes = true;
+    plies++;
+  }
+  if (!plies) return null;
+  const drop =
+    materialOf(start, side) - materialOf(start, opp) - (materialOf(leaf, side) - materialOf(leaf, opp));
+  const lost = biggestLostPiece(start, leaf, side);
+  return {
+    plies,
+    drop,
+    lost,
+    lostAt: lost != null && capturedAt[lost] !== undefined ? capturedAt[lost] : -1,
+    mated: leaf.isCheckmate() && leaf.turn() === side,
+    oppPromotes,
+  };
+}
+
+/**
  * Concrete reason a sub-par move was bad, derived from the engine's own lines
  * plus board logic. Returns undefined when no concrete cause is found — the
  * caller then probes (counterfactual) and finally falls back to evalSwingReason.
- * Priority: allowed mate → missed mate → hung material → missed material win →
- * allowed fork → allowed promotion → slow material loss (PV-leaf).
+ *
+ * Every claim is CORROBORATED against the engine's refutation PV (see pvFacts)
+ * so the message and the "see how it's punished" line always tell the same
+ * story. Priority: allowed mate → missed mate → PV mate → promotion →
+ * confirmed fork → net material loss (immediate/slow, compensation-aware) →
+ * missed material win (confirmed from the best line).
  */
 function buildReason(
   game: ParsedGame,
@@ -425,80 +490,75 @@ function buildReason(
       ? `${mover} had a forced checkmate here — ${bestSan} would have mated in ${moverMateBefore}.`
       : `${mover} had a forced checkmate in ${moverMateBefore} here and let it slip.`;
   }
-  // Hung material: the opponent's best reply captures one of the mover's pieces.
-  // The headline figure is the engine's NET point swing (lostPts), so a piece
-  // that's traded back reads as the real cost — "wins the queen but gets a rook
-  // back, ~4 points" rather than a flat "loses the queen".
-  if (refUci && lostPts >= 1) {
-    const to = refUci.slice(2, 4) as Square;
-    const victim = new Chess(fenAfter).get(to);
-    if (victim && victim.color === color) {
-      const v = pieceWord(victim.type);
-      const full = PIECE_VALUE[victim.type];
-      const take = refSan ?? "the reply";
-      // Net loss well below the captured piece's value ⇒ the mover wins something
-      // back — say so, instead of claiming the whole piece is gone.
-      return lostPts < full - 1
-        ? `This loses about ${points(lostPts)} — ${take} wins ${mover}'s ${v}, but ${mover} gets material back for it.${bestTail}`
-        : v === "pawn"
-          ? `This drops a pawn — ${take} wins it.${bestTail}`
-          : `This hangs ${mover}'s ${v} — ${take} wins it, about ${points(lostPts)} down.${bestTail}`;
+  // Ground truth: replay the engine's refutation line ONCE and read what
+  // verifiably happens in it. Every story below must match these facts — the
+  // refutation is exactly what the user steps through, so a claim the line
+  // doesn't corroborate ("hangs your queen" when the queen escapes, "fork" when
+  // both pieces are saved) must never be shown. `net` folds in what the played
+  // move itself captured: taking a knight and losing the queen costs ~6, not 9.
+  const facts = posEvals[i + 1].bestPv?.length ? pvFacts(fenAfter, posEvals[i + 1].bestPv, color) : null;
+  const wonByPlayed = capturedValue(game, i);
+  const net = facts ? Math.round(facts.drop - wonByPlayed) : 0;
+
+  // Backup mate detection: the refutation line itself ends in checkmate (the
+  // eval-based branches above normally catch this via mate scores).
+  if (facts?.mated) {
+    return `This runs into a forced checkmate${refSan ? `, starting with ${refSan}` : ""}.${bestTail}`;
+  }
+  // A passed pawn queens somewhere in the punishing line.
+  if (facts?.oppPromotes) {
+    return `This lets ${opp}'s pawn march down and become a new queen${refSan ? ` — it starts with ${refSan}` : ""}.${bestTail}`;
+  }
+  // Fork / double attack — only when the line CONFIRMS a prong actually falls.
+  // The king counts as a prong (fork-with-check) since it can't be defended.
+  if (refUci && facts && facts.lostAt >= 1 && net >= 2) {
+    const all = forkTargets(fenAfter, refUci, color);
+    const hasKing = all.some((h) => h.type === "k");
+    const heavy = all.filter((h) => h.val >= 3).sort((a, b) => b.val - a.val);
+    const fallen = heavy.find((h) => h.type === facts.lost);
+    if (fallen && hasKing) {
+      return `This lets ${refSan ?? opp} attack ${mover}'s king and ${fallen.word} at the same time — the king must move, and the ${fallen.word} falls (about ${points(net)}).${bestTail}`;
+    }
+    if (fallen && heavy.length >= 2) {
+      return `This lets ${refSan ?? opp} attack ${mover}'s ${heavy[0].word} and ${heavy[1].word} at once — only one can be saved, and the line wins the ${fallen.word} (about ${points(net)}).${bestTail}`;
     }
   }
-  // Missed a winning capture the best move would have made.
+  // Material verdict from the line itself: which piece actually falls, when,
+  // and the NET cost after everything won back (including by the played move).
+  if (facts && facts.lost && net >= 1) {
+    const v = pieceWord(facts.lost);
+    const lostVal = PIECE_VALUE[facts.lost];
+    const immediate = facts.lostAt === 0; // the very next move takes it
+    const take = refSan ?? "the reply";
+    if (lostVal <= 1) {
+      return immediate
+        ? `This drops a pawn — ${take} just takes it.${bestTail}`
+        : `This loses a pawn over the next few moves${refSan ? ` — it starts with ${refSan}` : ""}.${bestTail}`;
+    }
+    if (net >= lostVal - 1) {
+      // Costs roughly the whole piece — a genuine hang / trap.
+      return immediate
+        ? `This hangs ${mover}'s ${v} — ${take} wins it, about ${points(net)} down.${bestTail}`
+        : `This loses ${mover}'s ${v} a few moves later${refSan ? ` — it starts with ${refSan}` : ""}, about ${points(net)} down.${bestTail}`;
+    }
+    // The piece falls but real material comes back (the played move's own
+    // capture and/or the line's recaptures) — state the net, never the piece.
+    return immediate
+      ? `${take} wins ${mover}'s ${v}; ${mover} gets material back for it, but still ends about ${points(net)} down.${bestTail}`
+      : `${mover}'s ${v} falls in the line${refSan ? ` starting with ${refSan}` : ""}; even with material back, ${mover} ends about ${points(net)} down.${bestTail}`;
+  }
+  // Missed win: the engine's best move led to a concrete gain — corroborated by
+  // replaying the BEST line, not guessed from its first move's target square.
   const bUci = posEvals[i].bestMove;
   if (bUci && bUci.slice(0, 4) !== game.uci[i].slice(0, 4) && lostPts >= 2) {
-    const to = bUci.slice(2, 4) as Square;
-    const target = new Chess(fenBefore).get(to);
-    if (target && target.color !== color) {
-      return `${mover} missed ${bestSan ?? "a stronger move"} — it wins about ${points(lostPts)} (the ${pieceWord(target.type)}).`;
+    const oppC: "w" | "b" = color === "w" ? "b" : "w";
+    const bf = posEvals[i].bestPv?.length ? pvFacts(fenBefore, posEvals[i].bestPv, oppC) : null;
+    if (bf?.mated) {
+      return `${mover} missed ${bestSan ?? "a stronger move"} — it leads to a forced checkmate.`;
     }
-  }
-  // Allowed a fork / double attack: the reply hits two valuable pieces at once.
-  // The king counts as a prong (a fork-with-check) since it can't be defended —
-  // but on its own a check isn't a fork, so it must pair with a real piece.
-  if (refUci) {
-    const all = forkTargets(fenAfter, refUci, color);
-    const hasKing = all.some((h) => h.word === "king");
-    const heavy = all.filter((h) => h.val >= 3).sort((a, b) => b.val - a.val);
-    if (hasKing && heavy.length >= 1) {
-      return `This lets ${refSan ?? opp} attack ${mover}'s king and ${heavy[0].word} at the same time — the king must move, so ${mover} loses the ${heavy[0].word}.${bestTail}`;
-    }
-    if (heavy.length >= 2) {
-      return `This lets ${refSan ?? opp} attack ${mover}'s ${heavy[0].word} and ${heavy[1].word} at the same time — only one can be saved.${bestTail}`;
-    }
-  }
-  // Allowed a passed pawn through: the refutation line contains an opponent
-  // promotion (opponent moves sit at even plies of a line starting after our move).
-  if (refUci) {
-    const refLine = pvToSan(fenAfter, posEvals[i + 1].bestPv, 10);
-    const promo = refLine.findIndex((s, idx) => idx % 2 === 0 && s.includes("="));
-    if (promo >= 0 && promo <= 7) {
-      return `This lets ${opp}'s pawn march down and become a new queen${refSan ? ` — it starts with ${refSan}` : ""}.${bestTail}`;
-    }
-  }
-  // Slow tactic (PV-leaf): replay the refutation line to its end and see if the
-  // mover comes out materially worse — a piece trapped or lost over several moves
-  // even though nothing hangs on move one.
-  {
-    const pv = posEvals[i + 1].bestPv;
-    if (pv && pv.length >= 3) {
-      const start = new Chess(fenAfter);
-      const leaf = new Chess(fenAfter);
-      for (const u of pv.slice(0, 12)) {
-        try {
-          if (!leaf.move({ from: u.slice(0, 2) as Square, to: u.slice(2, 4) as Square, promotion: (u[4] as "q") ?? "q" })) break;
-        } catch {
-          break;
-        }
-      }
-      const opp: "w" | "b" = color === "w" ? "b" : "w";
-      const drop =
-        materialOf(start, color) - materialOf(start, opp) - (materialOf(leaf, color) - materialOf(leaf, opp));
-      const lost = drop >= 2 ? biggestLostPiece(start, leaf, color) : null;
-      if (lost) {
-        return `This loses ${mover}'s ${pieceWord(lost)} a few moves later${refSan ? ` — it starts with ${refSan}` : ""}, about ${points(Math.round(drop))} down.${bestTail}`;
-      }
+    if (bf && bf.drop >= 2) {
+      const what = bf.lost ? `${opp}'s ${pieceWord(bf.lost)}` : "material";
+      return `${mover} missed ${bestSan ?? "a stronger move"} — it wins ${what} (about ${points(Math.round(bf.drop))}).`;
     }
   }
   return undefined; // no concrete cause — caller probes, then uses eval-swing text
@@ -631,7 +691,11 @@ async function probeReason(
   candidates.sort((a, b) => PIECE_VALUE[b.type] - PIECE_VALUE[a.type]);
   candidates = candidates.slice(0, 12);
 
-  let best: { sq: Square; type: string; gain: number } | null = null;
+  // Removing ANY piece helps the mover by roughly its material value, so raw
+  // gain says nothing — a queen removal "gains" ~900 in every position. A piece
+  // is only THE problem when removing it helps far beyond its face value (its
+  // threats, not its material, are what hurt) — rank by that excess.
+  let best: { sq: Square; type: string; excess: number; moverCp: number } | null = null;
   for (const cand of candidates) {
     if (signal?.aborted) return undefined;
     const perturbed = removePiece(fenAfter, cand.sq, color);
@@ -644,13 +708,17 @@ async function probeReason(
     }
     const moverCp = moverCpOf(lines.find((l) => l.multipv === 1));
     if (moverCp == null) continue;
-    const gain = moverCp - baselineMoverCp; // how much removing this helps the mover
-    if (!best || gain > best.gain) best = { sq: cand.sq, type: cand.type, gain };
+    const excess = moverCp - baselineMoverCp - PIECE_VALUE[cand.type] * 100;
+    if (!best || excess > best.excess) best = { sq: cand.sq, type: cand.type, excess, moverCp };
   }
-  if (!best || best.gain < 150) return undefined; // nothing clearly decisive
+  // Only claim it when the piece clearly punches above its weight AND the
+  // "you'd be fine without it" part is actually true of the probed position —
+  // never assert "about equal" the engine didn't show.
+  if (!best || best.excess < 200 || best.moverCp < -100) return undefined;
   const bestTail = bestSan ? ` Best was ${bestSan}.` : "";
   const where = best.type === "p" ? `pawn on ${best.sq}` : pieceWord(best.type);
-  return `${sideWords(color).opp}'s ${where} is the real problem here — without it on the board, the game would be about equal.${bestTail}`;
+  const standing = Math.abs(best.moverCp) <= 100 ? "the game would be about equal" : `${sideWords(color).mover} would be doing well`;
+  return `${sideWords(color).opp}'s ${where} is the real problem here — without it on the board, ${standing}.${bestTail}`;
 }
 
 export interface ReportOptions {
