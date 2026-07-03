@@ -168,20 +168,70 @@ html, body, #root {
 [data-board-theme="slate"]  { --b-light: #cdd3da; --b-dark: #647387; }
 [data-board-theme="coffee"] { --b-light: #ead9bd; --b-dark: #a9744a; }
 
-/* Piece set: Wikipedia (CDN) override of the bundled cburnett set. Pieces live
-   under .cg-wrap as <piece class="role color">. */
-[data-piece-set="wiki"] .cg-wrap piece.pawn.white   { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/wP.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.knight.white { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/wN.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.bishop.white { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/wB.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.rook.white   { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/wR.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.queen.white  { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/wQ.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.king.white   { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/wK.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.pawn.black   { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/bP.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.knight.black { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/bN.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.bishop.black { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/bB.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.rook.black   { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/bR.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.queen.black  { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/bQ.png) !important; }
-[data-piece-set="wiki"] .cg-wrap piece.king.black   { background-image: url(https://cdn.jsdelivr.net/gh/oakmac/chessboardjs@master/website/img/chesspieces/wikipedia/bK.png) !important; }
+/* Piece sets: local SVGs fetched by scripts/fetch-pieces.mjs (lichess lila
+   sets, each under its original license) — they work offline and on device,
+   unlike a CDN. cburnett is the base set bundled via chessground's CSS, so it
+   needs no override. Pieces render as <piece class="role color"> in .cg-wrap. */
+[data-piece-set="merida"] .cg-wrap piece.pawn.white { background-image: url(/pieces/merida/wP.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.knight.white { background-image: url(/pieces/merida/wN.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.bishop.white { background-image: url(/pieces/merida/wB.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.rook.white { background-image: url(/pieces/merida/wR.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.queen.white { background-image: url(/pieces/merida/wQ.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.king.white { background-image: url(/pieces/merida/wK.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.pawn.black { background-image: url(/pieces/merida/bP.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.knight.black { background-image: url(/pieces/merida/bN.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.bishop.black { background-image: url(/pieces/merida/bB.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.rook.black { background-image: url(/pieces/merida/bR.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.queen.black { background-image: url(/pieces/merida/bQ.svg) !important; }
+[data-piece-set="merida"] .cg-wrap piece.king.black { background-image: url(/pieces/merida/bK.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.pawn.white { background-image: url(/pieces/alpha/wP.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.knight.white { background-image: url(/pieces/alpha/wN.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.bishop.white { background-image: url(/pieces/alpha/wB.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.rook.white { background-image: url(/pieces/alpha/wR.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.queen.white { background-image: url(/pieces/alpha/wQ.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.king.white { background-image: url(/pieces/alpha/wK.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.pawn.black { background-image: url(/pieces/alpha/bP.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.knight.black { background-image: url(/pieces/alpha/bN.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.bishop.black { background-image: url(/pieces/alpha/bB.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.rook.black { background-image: url(/pieces/alpha/bR.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.queen.black { background-image: url(/pieces/alpha/bQ.svg) !important; }
+[data-piece-set="alpha"] .cg-wrap piece.king.black { background-image: url(/pieces/alpha/bK.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.pawn.white { background-image: url(/pieces/maestro/wP.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.knight.white { background-image: url(/pieces/maestro/wN.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.bishop.white { background-image: url(/pieces/maestro/wB.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.rook.white { background-image: url(/pieces/maestro/wR.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.queen.white { background-image: url(/pieces/maestro/wQ.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.king.white { background-image: url(/pieces/maestro/wK.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.pawn.black { background-image: url(/pieces/maestro/bP.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.knight.black { background-image: url(/pieces/maestro/bN.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.bishop.black { background-image: url(/pieces/maestro/bB.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.rook.black { background-image: url(/pieces/maestro/bR.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.queen.black { background-image: url(/pieces/maestro/bQ.svg) !important; }
+[data-piece-set="maestro"] .cg-wrap piece.king.black { background-image: url(/pieces/maestro/bK.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.pawn.white { background-image: url(/pieces/staunty/wP.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.knight.white { background-image: url(/pieces/staunty/wN.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.bishop.white { background-image: url(/pieces/staunty/wB.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.rook.white { background-image: url(/pieces/staunty/wR.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.queen.white { background-image: url(/pieces/staunty/wQ.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.king.white { background-image: url(/pieces/staunty/wK.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.pawn.black { background-image: url(/pieces/staunty/bP.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.knight.black { background-image: url(/pieces/staunty/bN.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.bishop.black { background-image: url(/pieces/staunty/bB.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.rook.black { background-image: url(/pieces/staunty/bR.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.queen.black { background-image: url(/pieces/staunty/bQ.svg) !important; }
+[data-piece-set="staunty"] .cg-wrap piece.king.black { background-image: url(/pieces/staunty/bK.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.pawn.white { background-image: url(/pieces/fresca/wP.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.knight.white { background-image: url(/pieces/fresca/wN.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.bishop.white { background-image: url(/pieces/fresca/wB.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.rook.white { background-image: url(/pieces/fresca/wR.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.queen.white { background-image: url(/pieces/fresca/wQ.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.king.white { background-image: url(/pieces/fresca/wK.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.pawn.black { background-image: url(/pieces/fresca/bP.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.knight.black { background-image: url(/pieces/fresca/bN.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.bishop.black { background-image: url(/pieces/fresca/bB.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.rook.black { background-image: url(/pieces/fresca/bR.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.queen.black { background-image: url(/pieces/fresca/bQ.svg) !important; }
+[data-piece-set="fresca"] .cg-wrap piece.king.black { background-image: url(/pieces/fresca/bK.svg) !important; }
 
 /* Settings modal */
 .settings-modal { max-width: 380px; width: 100%; }
@@ -194,6 +244,28 @@ html, body, #root {
 .piece-chip { flex: 1; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 9px; padding: 9px; font: 600 13px var(--font-sans); cursor: pointer; }
 .piece-chip:hover { border-color: #4f5570; }
 .piece-chip.active { border-color: var(--accent); color: var(--accent-light); background: rgba(122,110,240,.1); }
+
+/* Piece-set cards: the actual pieces, so choosing isn't guesswork. */
+.piece-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.piece-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 10px 6px 8px;
+  font: 600 12px var(--font-sans);
+  cursor: pointer;
+}
+.piece-card:hover { border-color: #4f5570; }
+.piece-card.active { border-color: var(--accent); color: var(--accent-light); background: rgba(122, 110, 240, .1); }
+.piece-card-preview { display: flex; gap: 2px; }
+/* A soft light plate behind the previews so black pieces read on dark themes. */
+.piece-card-preview img { width: 30px; height: 30px; background: #e8e4da; border-radius: 6px; padding: 2px; }
+.piece-card-label { line-height: 1; }
 
 /* Coach toggle row inside the Play panel + the pause-on-mistake card. */
 .coach-row { border-top: 1px solid var(--border-soft); margin-top: 4px; padding-top: 12px; padding-bottom: 12px; }
@@ -862,6 +934,22 @@ html, body, #root {
 .review-moments { display: flex; align-items: center; gap: 7px; }
 .moment-btn { padding: 4px 12px; font-size: 15px; line-height: 1.2; }
 .moment-label { font-size: 11.5px; color: var(--text-dim); white-space: nowrap; min-width: 84px; text-align: center; }
+/* One-line "the game turned on 5. Nxf7??" — tap to jump there. */
+.review-summary {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 2px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  text-align: left;
+  cursor: pointer;
+}
+.review-summary:hover { color: var(--text); }
+.review-summary strong { font-weight: 800; }
 
 /* Loader: one-tap re-open of recent archived games. */
 .recent-games { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; }

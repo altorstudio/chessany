@@ -111,6 +111,26 @@ export function PlayScreen() {
 
   const previewView = preview ? replayLine(preview.startFen, preview.sans, previewIdx) : null;
 
+  // The nav bar steps whatever the board shows: the open coach line when there
+  // is one (stepping back past its start closes it), otherwise the game — the
+  // same rule as the arrow keys, so the controls never contradict each other.
+  const navPrev = () => {
+    if (preview) {
+      if (previewIdx <= 0) setPreview(null);
+      else setPreviewIdx((i) => i - 1);
+      return;
+    }
+    setViewPly(cur - 1);
+  };
+  const navNext = () => {
+    if (preview) { setPreviewIdx((i) => Math.min(i + 1, preview.sans.length)); return; }
+    setViewPly(cur + 1);
+  };
+  const navFirst = () => { if (preview) setPreviewIdx(0); else setViewPly(0); };
+  const navLast = () => { if (preview) setPreviewIdx(preview.sans.length); else setViewPly(null); };
+  const navAtStart = preview ? false : cur <= 0;
+  const navAtEnd = preview ? previewIdx >= preview.sans.length : viewPly === null || cur >= history.length;
+
   // No arrows while stepping a line; otherwise a single better-move hint arrow.
   const shapes: BoardShape[] | undefined =
     !preview && flagged && verdict?.bestUci
@@ -189,13 +209,13 @@ export function PlayScreen() {
           </div>
         )}
         <BoardNavBar
-          onFirst={() => setViewPly(0)}
-          onPrev={() => setViewPly(cur - 1)}
-          onNext={() => setViewPly(cur + 1)}
-          onLast={() => setViewPly(null)}
+          onFirst={navFirst}
+          onPrev={navPrev}
+          onNext={navNext}
+          onLast={navLast}
           onFlip={flip}
-          atStart={cur <= 0}
-          atEnd={viewPly === null || cur >= history.length}
+          atStart={navAtStart}
+          atEnd={navAtEnd}
         />
       </section>
       <aside className="side-col">

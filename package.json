@@ -9,8 +9,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "engines:fetch": "node scripts/fetch-engines.mjs",
-    "postinstall": "node scripts/fetch-engines.mjs",
-    "cap:sync": "cap sync"
+    "postinstall": "node scripts/fetch-engines.mjs && node scripts/fetch-pieces.mjs",
+    "cap:sync": "cap sync",
+    "pieces:fetch": "node scripts/fetch-pieces.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

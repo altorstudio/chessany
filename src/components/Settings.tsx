@@ -1,4 +1,4 @@
-import { useFeedback, type BoardTheme, type PieceSet, type Theme } from "../feedback";
+import { playSound, useFeedback, type BoardTheme, type PieceSet, type Theme } from "../feedback";
 
 const APPEARANCE: { id: Theme; label: string }[] = [
   { id: "dark", label: "Night" },
@@ -12,9 +12,15 @@ const THEMES: { id: BoardTheme; light: string; dark: string }[] = [
   { id: "coffee", light: "#ead9bd", dark: "#a9744a" },
 ];
 
+// Local SVGs under public/pieces/<id>/ (fetched by scripts/fetch-pieces.mjs) —
+// each option shows the actual pieces instead of just a name.
 const PIECES: { id: PieceSet; label: string }[] = [
   { id: "cburnett", label: "Classic" },
-  { id: "wiki", label: "Wikipedia" },
+  { id: "merida", label: "Merida" },
+  { id: "alpha", label: "Alpha" },
+  { id: "maestro", label: "Maestro" },
+  { id: "staunty", label: "Staunty" },
+  { id: "fresca", label: "Fresca" },
 ];
 
 function Toggle({ on, onClick, label, sub }: { on: boolean; onClick: () => void; label: string; sub?: string }) {
@@ -65,7 +71,16 @@ export function Settings({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="settings-section" style={{ marginTop: 16 }}>
-          <Toggle on={sound} onClick={() => setSound(!sound)} label="Sound" sub="Move and capture sounds" />
+          <Toggle
+            on={sound}
+            onClick={() => {
+              setSound(!sound);
+              // Play a sample right away so enabling it is instantly audible.
+              if (!sound) setTimeout(() => playSound("move"), 60);
+            }}
+            label="Sound"
+            sub="Move and capture sounds"
+          />
           {/* Vibration only matters on touch devices; hide it on desktop. */}
           {typeof navigator !== "undefined" && (navigator.maxTouchPoints > 0 || "ontouchstart" in window) && (
             <Toggle on={haptics} onClick={() => setHaptics(!haptics)} label="Vibration" sub="Haptic feedback on moves" />
@@ -91,14 +106,19 @@ export function Settings({ onClose }: { onClose: () => void }) {
 
         <div className="settings-group">
           <div className="rail-section-title">Pieces</div>
-          <div className="piece-chips">
+          <div className="piece-cards">
             {PIECES.map((p) => (
               <button
                 key={p.id}
-                className={`piece-chip${pieceSet === p.id ? " active" : ""}`}
+                className={`piece-card${pieceSet === p.id ? " active" : ""}`}
                 onClick={() => setPieceSet(p.id)}
               >
-                {p.label}
+                <span className="piece-card-preview">
+                  <img src={`/pieces/${p.id}/wN.svg`} alt="" loading="lazy" />
+                  <img src={`/pieces/${p.id}/wK.svg`} alt="" loading="lazy" />
+                  <img src={`/pieces/${p.id}/bQ.svg`} alt="" loading="lazy" />
+                </span>
+                <span className="piece-card-label">{p.label}</span>
               </button>
             ))}
           </div>

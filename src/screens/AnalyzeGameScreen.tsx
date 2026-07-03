@@ -11,6 +11,7 @@ import { useStore } from "../store";
 import { useNav } from "../nav";
 import { OnlineGames } from "../components/OnlineGames";
 import {
+  CLASS_META,
   generateReport,
   parseGameForReport,
   type GameReport as Report,
@@ -478,6 +479,75 @@ export function AnalyzeGameScreen() {
   // shouldn't have to re-paste a PGN they already analyzed).
   const recent = useMemo(() => (tree ? [] : listGames().slice(0, 4)), [tree]);
 
+  // ONE mental model for every navigation control (nav bar, desktop buttons,
+  // swipes, arrow keys): they move whatever the board is showing. While a coach
+  // line ("best" / "how it's punished") is open they step THAT line — and
+  // stepping back past its start closes it, returning to the game. Anything
+  // else (arrows stepping the game underneath an open line) reads as broken.
+  const stepPrev = () => {
+    if (preview) {
+      if (previewIdx <= 0) setPreview(null);
+      else setPreviewIdx((i) => i - 1);
+      return;
+    }
+    stopAuto();
+    setPath(parentPath(path));
+  };
+  const stepNext = () => {
+    if (preview) {
+      setPreviewIdx((i) => Math.min(i + 1, preview.sans.length));
+      return;
+    }
+    if (!tree) return;
+    stopAuto();
+    setPath(nextMainlinePath(tree, path));
+  };
+  const stepFirst = () => {
+    if (preview) { setPreviewIdx(0); return; }
+    stopAuto();
+    setPath("");
+  };
+  const stepLast = () => {
+    if (preview) { setPreviewIdx(preview.sans.length); return; }
+    stopAuto();
+    setPath(mainPath);
+  };
+  // In a preview, ‹ is never disabled — at the line's start it closes the line.
+  const navAtStart = preview ? false : !path;
+  const navAtEnd = preview ? previewIdx >= preview.sans.length : atEnd;
+
+  // Swipe the board horizontally to step (mobile). Ignored when the touch
+  // starts on a piece so it never fights making a move by drag.
+  const swipeRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const onBoardTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest("piece")) { swipeRef.current = null; return; }
+    const t = e.touches[0];
+    swipeRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+  const onBoardTouchEnd = (e: React.TouchEvent) => {
+    const s = swipeRef.current;
+    swipeRef.current = null;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (Date.now() - s.t > 600 || Math.abs(dx) < 48 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+    if (dx < 0) stepNext();
+    else stepPrev();
+  };
+
+  // The move the game hinged on: the costliest mistake/blunder. One tappable
+  // line under the review bar ("the game turned on 5. Nxf7??").
+  const turning = useMemo(() => {
+    if (!report) return null;
+    let best: Report["moves"][number] | null = null;
+    for (const m of report.moves) {
+      if (m.classification !== "mistake" && m.classification !== "blunder") continue;
+      if (!best || m.cpLoss > best.cpLoss) best = m;
+    }
+    return best;
+  }, [report]);
+
   // Name + remaining clock for one side, shown above/below the board (the side
   // to move's name is highlighted). `pos` only tweaks the padding.
   const playerStrip = (color: "white" | "black", pos: "top" | "bottom") => {
@@ -498,7 +568,7 @@ export function AnalyzeGameScreen() {
     <div className="layout analyze-layout board-screen" ref={layoutRef}>
       <section className="board-col">
         {game && playerStrip(orientation === "white" ? "black" : "white", "top")}
-        <div className="board-eval-row">
+        <div className="board-eval-row" onTouchStart={onBoardTouchStart} onTouchEnd={onBoardTouchEnd}>
           <EvalBar lines={lines} fen={fen} orientation={orientation} />
           <ChessgroundBoard
             fen={previewView ? previewView.fen : fen}
@@ -528,27 +598,29 @@ export function AnalyzeGameScreen() {
         )}
         {tree && (
           <>
-            {/* Desktop control row (hidden on mobile, where BoardNavBar takes over). */}
+            {/* Desktop control row (hidden on mobile, where BoardNavBar takes
+                over). All controls step whatever the board shows — the open
+                coach line when there is one, else the game. */}
             <div className="row nav-row">
-              <button className="btn" onClick={() => { stopAuto(); setPath(parentPath(path)); }} disabled={!path}>‹</button>
-              <button className={`btn${autoplay ? " primary" : ""}`} onClick={() => { setLoop(false); setAutoplay((a) => !a); }} disabled={atEnd && !loop} title="Auto-play">
+              <button className="btn" onClick={stepPrev} disabled={navAtStart}>‹</button>
+              <button className={`btn${autoplay ? " primary" : ""}`} onClick={() => { setLoop(false); setAutoplay((a) => !a); }} disabled={(atEnd && !loop) || !!preview} title="Auto-play">
                 {autoplay ? "⏸" : "▶"}
               </button>
-              <button className="btn" onClick={() => { stopAuto(); setPath(nextMainlinePath(tree, path)); }} disabled={atEnd}>›</button>
+              <button className="btn" onClick={stepNext} disabled={navAtEnd}>›</button>
               <button className="btn" onClick={() => setOrientation((o) => (o === "white" ? "black" : "white"))} title="Flip board">⇅</button>
             </div>
             <div className="nav-hint">Tap a piece then its target to move · ← / → to step · ⇅ flips</div>
             {/* Mobile thumb-zone control bar (hidden on desktop). */}
             <BoardNavBar
-              onFirst={() => { stopAuto(); setPath(""); }}
-              onPrev={() => { stopAuto(); setPath(parentPath(path)); }}
-              onNext={() => { stopAuto(); setPath(nextMainlinePath(tree, path)); }}
-              onLast={() => { stopAuto(); setPath(mainPath); }}
+              onFirst={stepFirst}
+              onPrev={stepPrev}
+              onNext={stepNext}
+              onLast={stepLast}
               onFlip={() => setOrientation((o) => (o === "white" ? "black" : "white"))}
-              atStart={!path}
-              atEnd={atEnd}
+              atStart={navAtStart}
+              atEnd={navAtEnd}
               playing={autoplay}
-              onTogglePlay={() => { setLoop(false); setAutoplay((a) => !a); }}
+              onTogglePlay={preview ? undefined : () => { setLoop(false); setAutoplay((a) => !a); }}
             />
           </>
         )}
@@ -589,7 +661,9 @@ export function AnalyzeGameScreen() {
                 )}
               </>
             ) : (
-              <OnlineGames provider={tab} onPick={load} />
+              // key: remount per provider so the username + list are that
+              // provider's own (and the auto-fetch re-runs on tab switch).
+              <OnlineGames key={tab} provider={tab} onPick={load} />
             )}
           </div>
         ) : (
@@ -623,6 +697,18 @@ export function AnalyzeGameScreen() {
                         </div>
                       )}
                     </div>
+                  )}
+                  {report && !progress && turning && (
+                    <button
+                      className="review-summary"
+                      onClick={() => { stopAuto(); setPath(mainPath.slice(0, turning.ply * 2)); }}
+                    >
+                      The game turned on{" "}
+                      <strong style={{ color: CLASS_META[turning.classification].color }}>
+                        {Math.ceil(turning.ply / 2)}{turning.color === "w" ? "." : "…"} {figurine(turning.san)}
+                      </strong>{" "}
+                      — tap to see it
+                    </button>
                   )}
                   <div className="panel movelist-panel">
                     <div className="panel-title movelist-title">

@@ -12,13 +12,17 @@ export type MoveKind = "move" | "capture" | "castle" | "check" | "promote" | "ga
 // ---------------------------------------------------------------------------
 const LS_KEY = "chessany.feedback";
 export type BoardTheme = "walnut" | "forest" | "slate" | "coffee";
-export type PieceSet = "cburnett" | "wiki";
+export type PieceSet = "cburnett" | "merida" | "alpha" | "maestro" | "staunty" | "fresca";
+export const PIECE_SETS: PieceSet[] = ["cburnett", "merida", "alpha", "maestro", "staunty", "fresca"];
 export type Theme = "dark" | "light";
 interface Prefs { sound: boolean; haptics: boolean; coach: boolean; boardTheme: BoardTheme; pieceSet: PieceSet; theme: Theme }
 function loadPrefs(): Prefs {
   const def: Prefs = { sound: true, haptics: true, coach: false, boardTheme: "walnut", pieceSet: "cburnett", theme: "dark" };
   try {
-    return { ...def, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}") };
+    const p: Prefs = { ...def, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}") };
+    // Migration: sets that no longer exist (e.g. the old CDN "wiki") → default.
+    if (!PIECE_SETS.includes(p.pieceSet)) p.pieceSet = def.pieceSet;
+    return p;
   } catch {
     return def;
   }
@@ -74,6 +78,22 @@ function audio(): AudioContext | null {
   return ctx;
 }
 
+// Shared output chain: a gentle compressor glues the layered hits together and
+// stops fast sequences (premoves, autoplay) from clipping harshly.
+let master: DynamicsCompressorNode | null = null;
+function out(a: AudioContext): AudioNode {
+  if (!master) {
+    master = a.createDynamicsCompressor();
+    master.threshold.value = -20;
+    master.knee.value = 18;
+    master.ratio.value = 5;
+    master.attack.value = 0.002;
+    master.release.value = 0.12;
+    master.connect(a.destination);
+  }
+  return master;
+}
+
 // A soft sine note with a gentle attack/decay — used for chimes (promote, check,
 // game end). Sine waves are far mellower than square/sawtooth beeps.
 function tone(freq: number, dur: number, vol: number, delay = 0) {
@@ -87,30 +107,46 @@ function tone(freq: number, dur: number, vol: number, delay = 0) {
   g.gain.setValueAtTime(0.0001, t);
   g.gain.exponentialRampToValueAtTime(vol, t + 0.012); // soft fade-in (no click)
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  osc.connect(g).connect(a.destination);
+  osc.connect(g).connect(out(a));
   osc.start(t);
   osc.stop(t + dur + 0.02);
 }
 
-// A short, low-passed noise click — the natural "tock" of a wooden piece being
-// placed. Much more pleasant than a tonal beep for moves and captures.
-function click(vol: number, cutoff: number, dur: number, delay = 0) {
+// A wooden "thock" — the sound of a piece landing on a board. Synthesized the
+// classic woodblock way: a fast pitch-dropping sine gives the hollow body, and
+// a few milliseconds of band-passed noise give the contact tick. Far warmer
+// than a raw noise burst, which reads as static.
+function thock(vol: number, pitch: number, delay = 0) {
   const a = audio();
   if (!a) return;
   const t = a.currentTime + delay;
-  const len = Math.max(1, Math.floor(a.sampleRate * dur));
+  // Body: hollow knock.
+  const osc = a.createOscillator();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(pitch, t);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(60, pitch * 0.55), t + 0.07);
+  const g = a.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+  osc.connect(g).connect(out(a));
+  osc.start(t);
+  osc.stop(t + 0.13);
+  // Attack: the brief contact tick.
+  const len = Math.max(1, Math.floor(a.sampleRate * 0.012));
   const buf = a.createBuffer(1, len, a.sampleRate);
   const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
   const src = a.createBufferSource();
   src.buffer = buf;
-  const lp = a.createBiquadFilter();
-  lp.type = "lowpass";
-  lp.frequency.value = cutoff;
-  const g = a.createGain();
-  g.gain.setValueAtTime(vol, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  src.connect(lp).connect(g).connect(a.destination);
+  const bp = a.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.value = Math.min(4000, pitch * 9);
+  bp.Q.value = 1.1;
+  const ng = a.createGain();
+  ng.gain.setValueAtTime(vol * 0.55, t);
+  ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.014);
+  src.connect(bp).connect(ng).connect(out(a));
   src.start(t);
 }
 
@@ -118,33 +154,37 @@ export function playSound(kind: MoveKind) {
   if (!useFeedback.getState().sound) return;
   switch (kind) {
     case "move":
-      // Soft wooden tap.
-      click(0.16, 1100, 0.05);
+      // A single soft knock.
+      thock(0.5, 240);
       break;
     case "capture":
-      // Deeper, slightly louder tap with a low thump underneath.
-      click(0.24, 650, 0.07);
-      tone(150, 0.09, 0.08);
+      // Deeper knock + a lighter one right behind it — take, then replace.
+      thock(0.6, 165);
+      thock(0.3, 260, 0.045);
       break;
     case "castle":
-      click(0.15, 1000, 0.045);
-      click(0.15, 1000, 0.045, 0.085);
+      // Two pieces land: king, then rook.
+      thock(0.45, 240);
+      thock(0.4, 205, 0.09);
       break;
     case "promote":
-      // Gentle rising two-note chime (C5 → G5).
-      tone(523.25, 0.13, 0.1);
-      tone(783.99, 0.18, 0.1, 0.1);
+      // The piece lands, then a gentle rising two-note chime (C5 → G5).
+      thock(0.4, 240);
+      tone(523.25, 0.14, 0.07, 0.05);
+      tone(783.99, 0.2, 0.07, 0.16);
       break;
     case "check":
-      // Soft two-note alert (not a harsh square beep).
-      tone(659.25, 0.12, 0.1);
-      tone(880, 0.14, 0.09, 0.12);
+      // The piece lands, then a soft two-note alert.
+      thock(0.45, 240);
+      tone(659.25, 0.12, 0.06, 0.06);
+      tone(880, 0.15, 0.055, 0.17);
       break;
     case "gameEnd":
-      // Pleasant little major arpeggio (C5 → E5 → G5).
-      tone(523.25, 0.16, 0.1);
-      tone(659.25, 0.16, 0.1, 0.12);
-      tone(783.99, 0.26, 0.1, 0.24);
+      // Final knock, then a small major arpeggio (C5 → E5 → G5).
+      thock(0.45, 200);
+      tone(523.25, 0.16, 0.08, 0.1);
+      tone(659.25, 0.16, 0.08, 0.22);
+      tone(783.99, 0.3, 0.08, 0.34);
       break;
   }
 }

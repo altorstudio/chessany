@@ -27,3 +27,6 @@ npm-debug.log*
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# Piece sets (SVGs) are fetched via `npm run pieces:fetch`.
+public/pieces/

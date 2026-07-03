@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchLichessGames } from "../lichess";
 import { fetchChessComGames } from "../chesscom";
 import type { OnlineGame } from "../onlineGames";
@@ -59,6 +59,14 @@ export function OnlineGames({ provider, onPick }: { provider: Provider; onPick: 
     }
   };
 
+  // With a remembered username, fetch the latest games as soon as the tab
+  // opens — the common mobile flow is "open the tab, tap the newest game",
+  // which shouldn't need a Fetch tap (or show a stale empty list).
+  useEffect(() => {
+    if (cfg.getUser()) void search();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <>
       <div className="row">
@@ -74,6 +82,7 @@ export function OnlineGames({ provider, onPick }: { provider: Provider; onPick: 
         </button>
       </div>
       {error && <div className="game-state warn">{error}</div>}
+      {loading && games.length === 0 && <div className="game-state">Loading recent games…</div>}
       <div className="lichess-list">
         {games.map((g) => {
           const userIsWhite = g.white.toLowerCase() === username.trim().toLowerCase();
