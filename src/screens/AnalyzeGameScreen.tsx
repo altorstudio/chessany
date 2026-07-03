@@ -33,7 +33,7 @@ import { normalizePgn } from "../game/pgn";
 import { MoveFeedback } from "../components/MoveFeedback";
 import { BoardNavBar } from "../components/BoardNavBar";
 import { moveFeedback, classificationHaptic, type FeedbackLevel } from "../feedback";
-import { upsertGame, findGameByPgn } from "../archive";
+import { upsertGame, findGameByPgn, listGames } from "../archive";
 import { useFitViewport } from "../hooks/useFitViewport";
 
 // Only notable moves get a distinct quality buzz; ordinary good moves just get
@@ -450,6 +450,34 @@ export function AnalyzeGameScreen() {
   const atEnd = !!tree && nextMainlinePath(tree, path) === path;
   const mainLen = mainPath.length / 2;
 
+  // Key moments = the plies worth reviewing (brilliancies and errors). The
+  // review bar's ‹ › buttons cycle the board through them so nobody has to
+  // hunt for the coloured cells by scrolling the list.
+  const keyMoments = useMemo(
+    () =>
+      report
+        ? report.moves
+            .filter((m) => ["brilliant", "sharp", "inaccuracy", "mistake", "blunder"].includes(m.classification))
+            .map((m) => m.ply)
+        : [],
+    [report],
+  );
+  const curPly = onMain && node ? node.ply : 0;
+  const momentIdx = keyMoments.indexOf(curPly);
+  const jumpMoment = (dir: 1 | -1) => {
+    if (!keyMoments.length || !tree) return;
+    stopAuto();
+    const next =
+      dir === 1
+        ? keyMoments.find((p) => p > curPly) ?? keyMoments[0]
+        : [...keyMoments].reverse().find((p) => p < curPly) ?? keyMoments[keyMoments.length - 1];
+    setPath(mainPath.slice(0, next * 2));
+  };
+
+  // One-tap re-open of recent archived games on the loader (mobile users
+  // shouldn't have to re-paste a PGN they already analyzed).
+  const recent = useMemo(() => (tree ? [] : listGames().slice(0, 4)), [tree]);
+
   // Name + remaining clock for one side, shown above/below the board (the side
   // to move's name is highlighted). `pos` only tweaks the padding.
   const playerStrip = (color: "white" | "black", pos: "top" | "bottom") => {
@@ -544,6 +572,21 @@ export function AnalyzeGameScreen() {
                   <button className="btn primary" onClick={() => load(pgnText)} disabled={!pgnText.trim()}>Load PGN</button>
                   <button className="btn" onClick={() => { setPgnText(DEMO_PGN); load(DEMO_PGN); }}>Example</button>
                 </div>
+                {recent.length > 0 && (
+                  <div className="recent-games">
+                    <div className="recent-title">Recent games</div>
+                    {recent.map((g) => (
+                      <button key={g.id} className="recent-game" onClick={() => { setPgnText(g.pgn); load(g.pgn); }}>
+                        <span className="recent-players">{g.white} vs {g.black}</span>
+                        <span className="recent-meta">
+                          {g.accuracy
+                            ? `analyzed · ${g.accuracy.white.toFixed(0)}% / ${g.accuracy.black.toFixed(0)}%`
+                            : g.result}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
               <OnlineGames provider={tab} onPick={load} />
@@ -562,21 +605,41 @@ export function AnalyzeGameScreen() {
               {/* Verdict pinned at the top of the scroll area (Moves/Analysis). */}
               {panelTab !== "report" && feedbackEl}
               {panelTab === "moves" && (
-                <div className="panel movelist-panel">
-                  <div className="panel-title movelist-title">
-                    <span>Moves · {node?.ply ?? 0}/{mainLen}</span>
-                    <button
-                      className="link-btn movelist-new"
-                      onClick={() => { cancelReport(); stopAuto(); setGame(null); treeRef.current = null; setReport(null); setPath(""); setPanelTab("moves"); }}
-                    >
-                      + New game
-                    </button>
-                  </div>
-                  {!onMain && (
-                    <div className="variation-hint">Exploring a variation — tap any move to jump back.</div>
+                <>
+                  {report && !progress && (
+                    <div className="review-bar">
+                      <button className="review-acc" onClick={() => setShowReport(true)} title="Open the full report">
+                        <span className="review-chip white">{report.white.accuracy.toFixed(0)}%</span>
+                        <span className="review-vs">·</span>
+                        <span className="review-chip black">{report.black.accuracy.toFixed(0)}%</span>
+                      </button>
+                      {keyMoments.length > 0 && (
+                        <div className="review-moments">
+                          <button className="btn moment-btn" onClick={() => jumpMoment(-1)} aria-label="Previous key moment">‹</button>
+                          <span className="moment-label">
+                            {momentIdx >= 0 ? `Moment ${momentIdx + 1}/${keyMoments.length}` : `${keyMoments.length} key moments`}
+                          </span>
+                          <button className="btn moment-btn" onClick={() => jumpMoment(1)} aria-label="Next key moment">›</button>
+                        </div>
+                      )}
+                    </div>
                   )}
-                  <MoveTree root={tree} current={path} onJump={(p) => { stopAuto(); setPath(p); }} classOf={classOf} />
-                </div>
+                  <div className="panel movelist-panel">
+                    <div className="panel-title movelist-title">
+                      <span>Moves · {node?.ply ?? 0}/{mainLen}</span>
+                      <button
+                        className="link-btn movelist-new"
+                        onClick={() => { cancelReport(); stopAuto(); setGame(null); treeRef.current = null; setReport(null); setPath(""); setPanelTab("moves"); }}
+                      >
+                        + New game
+                      </button>
+                    </div>
+                    {!onMain && (
+                      <div className="variation-hint">Exploring a variation — tap any move to jump back.</div>
+                    )}
+                    <MoveTree root={tree} current={path} onJump={(p) => { stopAuto(); setPath(p); }} classOf={classOf} />
+                  </div>
+                </>
               )}
 
               {panelTab === "report" && (

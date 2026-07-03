@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { CLASS_META, type MoveClass } from "../game/report";
 import { figurine, type TreeNode, type TreePath } from "../game/tree";
 
@@ -109,6 +109,14 @@ export function MoveTree({
   onJump: (path: TreePath) => void;
   classOf: (path: TreePath, node: TreeNode) => MoveClass | undefined;
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // Keep the highlighted move visible while stepping through the game — on
+  // phones the visible list is short and the current move drifts off-screen
+  // within a few taps otherwise.
+  useEffect(() => {
+    wrapRef.current?.querySelector(".tree-cell.current")?.scrollIntoView({ block: "nearest" });
+  }, [current]);
+
   if (!root.children.length) return <div className="game-state">No moves yet</div>;
   const ctx: Ctx = { current, onJump, classOf };
 
@@ -164,5 +172,5 @@ export function MoveTree({
     }
   }
 
-  return <div className="tree-grid">{rows}</div>;
+  return <div className="tree-grid" ref={wrapRef}>{rows}</div>;
 }

@@ -21,11 +21,11 @@ interface Props {
  * thumb zone so the board never has to scroll out of view to be controlled.
  * Only renders buttons whose handler is supplied, so each screen configures it.
  */
+// onFirst/onLast stay in Props (callers still pass them) but the bar renders
+// only prev / play / next / flip — jump-to-ends wasn't worth the thumb space.
 export function BoardNavBar({
-  onFirst,
   onPrev,
   onNext,
-  onLast,
   onFlip,
   atStart,
   atEnd,
@@ -35,25 +35,44 @@ export function BoardNavBar({
 }: Props) {
   return (
     <div className="board-nav-bar">
-      {onFirst && (
-        <button className="btn nav-btn" onClick={onFirst} disabled={atStart} aria-label="First move">⏮</button>
-      )}
       {onPrev && (
-        <button className="btn nav-btn" onClick={onPrev} disabled={atStart} aria-label="Previous move">‹</button>
+        <button
+          className="btn nav-btn"
+          onClick={onPrev}
+          disabled={atStart}
+          aria-label="Previous move"
+        >
+          ‹
+        </button>
       )}
       {onTogglePlay && (
-        <button className={`btn nav-btn${playing ? " primary" : ""}`} onClick={onTogglePlay} disabled={atEnd && !playing} aria-label={playing ? "Pause" : "Auto-play"}>
+        <button
+          className={`btn nav-btn${playing ? " primary" : ""}`}
+          onClick={onTogglePlay}
+          disabled={atEnd && !playing}
+          aria-label={playing ? "Pause" : "Auto-play"}
+        >
           {playing ? "⏸" : "▶"}
         </button>
       )}
       {onNext && (
-        <button className="btn nav-btn" onClick={onNext} disabled={atEnd} aria-label="Next move">›</button>
-      )}
-      {onLast && (
-        <button className="btn nav-btn" onClick={onLast} disabled={atEnd} aria-label="Last move">⏭</button>
+        <button
+          className="btn nav-btn"
+          onClick={onNext}
+          disabled={atEnd}
+          aria-label="Next move"
+        >
+          ›
+        </button>
       )}
       {onFlip && (
-        <button className="btn nav-btn" onClick={onFlip} aria-label="Flip board">⇅</button>
+        <button
+          className="btn nav-btn"
+          onClick={onFlip}
+          aria-label="Flip board"
+        >
+          ⇅
+        </button>
       )}
       {extra}
     </div>
