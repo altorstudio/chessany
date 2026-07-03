@@ -121,7 +121,8 @@ const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0
 // Win probability (0–100) from centipawns. An Elo-style logistic that's steeper
 // than lichess's curve, so eval swings translate to bigger expected-points
 // changes — matching chess.com's stricter classification & accuracy.
-function winPct(cp: number): number {
+/** Win probability (0–100) from centipawns — also drives the report graph. */
+export function winPct(cp: number): number {
   return 100 / (1 + Math.pow(10, -cp / 340));
 }
 function moveAccuracy(winBefore: number, winAfter: number): number {

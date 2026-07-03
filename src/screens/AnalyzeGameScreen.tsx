@@ -2,9 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Chess } from "chess.js";
 import { ChessgroundBoard } from "../components/ChessgroundBoard";
-import { AnalysisLines } from "../components/AnalysisLines";
 import { EvalBar } from "../components/EvalBar";
-import { EngineConfig } from "../components/EngineConfig";
 import { GameReport } from "../components/GameReport";
 import { MoveTree } from "../components/MoveTree";
 import { useAnalysis } from "../engines/useAnalysis";
@@ -154,7 +152,9 @@ export function AnalyzeGameScreen() {
   const [report, setReport] = useState<Report | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [showReport, setShowReport] = useState(false);
-  const [panelTab, setPanelTab] = useState<"moves" | "analysis" | "report">("moves");
+  // "Analysis" was removed as a tab — the board's eval bar + best-move arrows
+  // already surface the live engine; the move list and report carry the rest.
+  const [panelTab, setPanelTab] = useState<"moves" | "report">("moves");
   const reportAbort = useRef<AbortController | null>(null); // cancels an in-flight report
   const layoutRef = useRef<HTMLDivElement>(null);
 
@@ -553,7 +553,6 @@ export function AnalyzeGameScreen() {
           <>
             <div className="panel-tabs">
               <button className={`panel-tab${panelTab === "moves" ? " active" : ""}`} onClick={() => setPanelTab("moves")}>Moves</button>
-              <button className={`panel-tab${panelTab === "analysis" ? " active" : ""}`} onClick={() => setPanelTab("analysis")}>Analysis</button>
               <button className={`panel-tab${panelTab === "report" ? " active" : ""}`} onClick={() => setPanelTab("report")}>
                 Report{progress ? "…" : ""}
               </button>
@@ -578,16 +577,6 @@ export function AnalyzeGameScreen() {
                   )}
                   <MoveTree root={tree} current={path} onJump={(p) => { stopAuto(); setPath(p); }} classOf={classOf} />
                 </div>
-              )}
-
-              {panelTab === "analysis" && (
-                <>
-                  <EngineConfig />
-                  <div className="panel">
-                    <div className="panel-title">Engine lines · move {node?.ply ?? 0}/{mainLen}</div>
-                    <AnalysisLines fen={fen} lines={lines} />
-                  </div>
-                </>
               )}
 
               {panelTab === "report" && (
@@ -666,6 +655,7 @@ export function AnalyzeGameScreen() {
           report={report}
           whiteName={game.white}
           blackName={game.black}
+          currentPly={onMain ? node?.ply : undefined}
           onClose={() => setShowReport(false)}
           onJump={(p) => { setShowReport(false); if (tree) setPath(mainPath.slice(0, p * 2)); }}
         />

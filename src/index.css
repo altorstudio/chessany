@@ -1007,8 +1007,43 @@ html, body, #root {
 .modal-title { font-size: 18px; font-weight: 700; }
 .modal-close { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; }
 
-.report-graph { border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
-.graph-svg { width: 100%; height: 180px; display: block; }
+.report-graph { position: relative; border-radius: 8px; overflow: hidden; margin-bottom: 6px; border: 1px solid var(--border); }
+.graph-svg { width: 100%; height: 180px; display: block; cursor: crosshair; touch-action: pan-y; }
+/* Which half is whose: tiny corner labels over the two territories. */
+.graph-side-label {
+  position: absolute;
+  left: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  pointer-events: none;
+  opacity: .6;
+}
+.graph-side-label.white { top: 5px; color: #3b382f; }
+.graph-side-label.black { bottom: 5px; color: #d8d4cc; }
+/* Scrub tooltip: move · eval · classification. */
+.graph-tip {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 9px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+  z-index: 2;
+}
+.graph-tip-move { font-weight: 700; }
+.graph-tip-eval { font-variant-numeric: tabular-nums; color: var(--text-dim); }
+.graph-tip-class { font-weight: 700; }
+.graph-hint { font-size: 10.5px; color: var(--text-dimmer, var(--text-dim)); margin-bottom: 14px; text-align: center; }
 
 .report-accuracy { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .acc-row { display: flex; align-items: center; gap: 10px; }
