@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- interactive-widget=resizes-visual: the soft keyboard must NOT resize the
+         layout viewport (innerHeight / dvh) — otherwise the pinned board layouts
+         squeeze while typing (e.g. the username box on the Analyze screen). The
+         browser pans the focused input into view instead. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-visual" />
     <meta name="theme-color" content="#10121b" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />

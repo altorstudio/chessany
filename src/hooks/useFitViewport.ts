@@ -29,6 +29,12 @@ export function useFitViewport(ref: RefObject<HTMLElement>, opts: Options = {}) 
         el.style.height = "";
         return;
       }
+      // While the user is typing, the soft keyboard may shrink the viewport
+      // (on platforms that ignore interactive-widget=resizes-visual). Don't
+      // re-fit then — squeezing the board under the keyboard looks broken; the
+      // blur / next render re-fits once the keyboard is gone.
+      const tag = document.activeElement?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
       el.style.height = `${Math.max(min, window.innerHeight - el.getBoundingClientRect().top)}px`;
     };
     fit();
