@@ -583,6 +583,21 @@ export function AnalyzeGameScreen() {
             movableColor={previewView || !tree ? undefined : fen.split(" ")[1] === "b" ? "black" : "white"}
             onMove={onMove}
           />
+          {/* While auto-playing (during analysis or replay), name the move the
+              board is showing — otherwise pieces just fly around anonymously. */}
+          {(progress || autoplay) && !preview && node?.san && (
+            <div
+              className="autoplay-move"
+              style={currentMove ? { borderColor: CLASS_META[currentMove.classification].color } : undefined}
+            >
+              {Math.ceil(node.ply / 2)}{node.ply % 2 === 1 ? "." : "…"} {figurine(node.san)}
+              {currentMove && (
+                <span style={{ color: CLASS_META[currentMove.classification].color, fontWeight: 800 }}>
+                  {" "}{CLASS_META[currentMove.classification].icon}
+                </span>
+              )}
+            </div>
+          )}
         </div>
         {game && playerStrip(orientation, "bottom")}
         {preview && (

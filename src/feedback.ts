@@ -14,14 +14,19 @@ const LS_KEY = "chessany.feedback";
 export type BoardTheme = "walnut" | "forest" | "slate" | "coffee";
 export type PieceSet = "cburnett" | "merida" | "alpha" | "maestro" | "staunty" | "fresca";
 export const PIECE_SETS: PieceSet[] = ["cburnett", "merida", "alpha", "maestro", "staunty", "fresca"];
+// "wood" is the built-in synthesized knock; the rest are recorded sample sets
+// (lichess's Enigmahack AGPLv3+ sets, fetched to public/sounds/<set>/).
+export type SoundSet = "wood" | "piano" | "nes" | "futuristic" | "sfx";
+export const SOUND_SETS: SoundSet[] = ["piano", "wood", "nes", "futuristic", "sfx"];
 export type Theme = "dark" | "light";
-interface Prefs { sound: boolean; haptics: boolean; coach: boolean; boardTheme: BoardTheme; pieceSet: PieceSet; theme: Theme }
+interface Prefs { sound: boolean; haptics: boolean; coach: boolean; boardTheme: BoardTheme; pieceSet: PieceSet; soundSet: SoundSet; theme: Theme }
 function loadPrefs(): Prefs {
-  const def: Prefs = { sound: true, haptics: true, coach: false, boardTheme: "walnut", pieceSet: "cburnett", theme: "dark" };
+  const def: Prefs = { sound: true, haptics: true, coach: false, boardTheme: "walnut", pieceSet: "cburnett", soundSet: "piano", theme: "dark" };
   try {
     const p: Prefs = { ...def, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}") };
     // Migration: sets that no longer exist (e.g. the old CDN "wiki") → default.
     if (!PIECE_SETS.includes(p.pieceSet)) p.pieceSet = def.pieceSet;
+    if (!SOUND_SETS.includes(p.soundSet)) p.soundSet = def.soundSet;
     return p;
   } catch {
     return def;
@@ -36,19 +41,21 @@ interface FeedbackState {
   coach: boolean;
   boardTheme: BoardTheme;
   pieceSet: PieceSet;
+  soundSet: SoundSet;
   theme: Theme;
   setSound: (v: boolean) => void;
   setHaptics: (v: boolean) => void;
   setCoach: (v: boolean) => void;
   setBoardTheme: (v: BoardTheme) => void;
   setPieceSet: (v: PieceSet) => void;
+  setSoundSet: (v: SoundSet) => void;
   setTheme: (v: Theme) => void;
 }
 
 export const useFeedback = create<FeedbackState>((set, get) => {
   const persist = () => {
-    const { sound, haptics, coach, boardTheme, pieceSet, theme } = get();
-    localStorage.setItem(LS_KEY, JSON.stringify({ sound, haptics, coach, boardTheme, pieceSet, theme }));
+    const { sound, haptics, coach, boardTheme, pieceSet, soundSet, theme } = get();
+    localStorage.setItem(LS_KEY, JSON.stringify({ sound, haptics, coach, boardTheme, pieceSet, soundSet, theme }));
   };
   return {
     sound: initial.sound,
@@ -56,12 +63,14 @@ export const useFeedback = create<FeedbackState>((set, get) => {
     coach: initial.coach,
     boardTheme: initial.boardTheme,
     pieceSet: initial.pieceSet,
+    soundSet: initial.soundSet,
     theme: initial.theme,
     setSound: (sound) => { set({ sound }); persist(); },
     setHaptics: (haptics) => { set({ haptics }); persist(); },
     setCoach: (coach) => { set({ coach }); persist(); },
     setBoardTheme: (boardTheme) => { set({ boardTheme }); persist(); },
     setPieceSet: (pieceSet) => { set({ pieceSet }); persist(); },
+    setSoundSet: (soundSet) => { set({ soundSet }); persist(); },
     setTheme: (theme) => { set({ theme }); persist(); },
   };
 });
@@ -150,38 +159,98 @@ function thock(vol: number, pitch: number, delay = 0) {
   src.start(t);
 }
 
-export function playSound(kind: MoveKind) {
-  if (!useFeedback.getState().sound) return;
+// ---------------------------------------------------------------------------
+// Recorded samples (public/sounds/<set>/{Move,Capture}.mp3 — lichess's
+// Enigmahack AGPLv3+ sets, fetched by scripts/fetch-sounds.mjs). Decoded once
+// per set and cached; the synthesized "wood" knock stays as the built-in set
+// AND the fallback while a sample is still loading or failed to fetch.
+// ---------------------------------------------------------------------------
+type SampleName = "Move" | "Capture";
+const sampleCache = new Map<string, AudioBuffer | "loading" | "failed">();
+
+function loadSample(set: SoundSet, name: SampleName): AudioBuffer | null {
+  const key = `${set}/${name}`;
+  const cached = sampleCache.get(key);
+  if (cached instanceof AudioBuffer) return cached;
+  if (cached) return null; // loading or failed — caller falls back to synth
+  sampleCache.set(key, "loading");
+  const a = audio();
+  if (!a) {
+    sampleCache.set(key, "failed");
+    return null;
+  }
+  void fetch(`${import.meta.env.BASE_URL}sounds/${key}.mp3`)
+    .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(String(r.status)))))
+    .then((buf) => a.decodeAudioData(buf))
+    .then((decoded) => sampleCache.set(key, decoded))
+    .catch(() => sampleCache.set(key, "failed"));
+  return null;
+}
+
+/** Play a recorded sample; false when unavailable (caller uses the synth). */
+function playSample(set: SoundSet, name: SampleName, vol: number, delay = 0): boolean {
+  const buf = loadSample(set, name);
+  const a = audio();
+  if (!buf || !a) return false;
+  const t = a.currentTime + delay;
+  const src = a.createBufferSource();
+  src.buffer = buf;
+  const g = a.createGain();
+  g.gain.value = vol;
+  src.connect(g).connect(out(a));
+  src.start(t);
+  return true;
+}
+
+/** Warm the current set's samples so the first move isn't a synth fallback. */
+export function preloadSounds() {
+  const { sound, soundSet } = useFeedback.getState();
+  if (!sound || soundSet === "wood") return;
+  loadSample(soundSet, "Move");
+  loadSample(soundSet, "Capture");
+}
+
+export function playSound(kind: MoveKind, setOverride?: SoundSet) {
+  if (!useFeedback.getState().sound && !setOverride) return;
+  const set = setOverride ?? useFeedback.getState().soundSet;
+  // The landing sound: a recorded sample when the set provides one, the
+  // synthesized knock otherwise (set to "wood", still loading, or fetch failed).
+  const land = (which: SampleName, vol: number, delay = 0) => {
+    if (set !== "wood" && playSample(set, which, vol, delay)) return;
+    if (which === "Capture") {
+      thock(0.6, 165, delay);
+      thock(0.3, 260, delay + 0.045);
+    } else {
+      thock(0.5, 240, delay);
+    }
+  };
   switch (kind) {
     case "move":
-      // A single soft knock.
-      thock(0.5, 240);
+      land("Move", 0.9);
       break;
     case "capture":
-      // Deeper knock + a lighter one right behind it — take, then replace.
-      thock(0.6, 165);
-      thock(0.3, 260, 0.045);
+      land("Capture", 0.9);
       break;
     case "castle":
       // Two pieces land: king, then rook.
-      thock(0.45, 240);
-      thock(0.4, 205, 0.09);
+      land("Move", 0.8);
+      land("Move", 0.6, 0.09);
       break;
     case "promote":
       // The piece lands, then a gentle rising two-note chime (C5 → G5).
-      thock(0.4, 240);
+      land("Move", 0.8);
       tone(523.25, 0.14, 0.07, 0.05);
       tone(783.99, 0.2, 0.07, 0.16);
       break;
     case "check":
       // The piece lands, then a soft two-note alert.
-      thock(0.45, 240);
+      land("Move", 0.85);
       tone(659.25, 0.12, 0.06, 0.06);
       tone(880, 0.15, 0.055, 0.17);
       break;
     case "gameEnd":
-      // Final knock, then a small major arpeggio (C5 → E5 → G5).
-      thock(0.45, 200);
+      // Final landing, then a small major arpeggio (C5 → E5 → G5).
+      land("Capture", 0.8);
       tone(523.25, 0.16, 0.08, 0.1);
       tone(659.25, 0.16, 0.08, 0.22);
       tone(783.99, 0.3, 0.08, 0.34);

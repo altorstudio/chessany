@@ -1,4 +1,14 @@
-import { playSound, useFeedback, type BoardTheme, type PieceSet, type Theme } from "../feedback";
+import { playSound, useFeedback, type BoardTheme, type PieceSet, type SoundSet, type Theme } from "../feedback";
+
+// "Wood" is the built-in synth; the rest are recorded sets (lichess Enigmahack,
+// AGPLv3+) fetched to public/sounds. Tapping a chip auditions it immediately.
+const SOUND_STYLES: { id: SoundSet; label: string }[] = [
+  { id: "piano", label: "Piano" },
+  { id: "wood", label: "Wood" },
+  { id: "nes", label: "Retro" },
+  { id: "futuristic", label: "Futuristic" },
+  { id: "sfx", label: "Cinematic" },
+];
 
 const APPEARANCE: { id: Theme; label: string }[] = [
   { id: "dark", label: "Night" },
@@ -44,6 +54,8 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const setBoardTheme = useFeedback((s) => s.setBoardTheme);
   const pieceSet = useFeedback((s) => s.pieceSet);
   const setPieceSet = useFeedback((s) => s.setPieceSet);
+  const soundSet = useFeedback((s) => s.soundSet);
+  const setSoundSet = useFeedback((s) => s.setSoundSet);
   const theme = useFeedback((s) => s.theme);
   const setTheme = useFeedback((s) => s.setTheme);
 
@@ -81,6 +93,26 @@ export function Settings({ onClose }: { onClose: () => void }) {
             label="Sound"
             sub="Move and capture sounds"
           />
+          {sound && (
+            <div className="sound-styles piece-chips">
+              {SOUND_STYLES.map((s) => (
+                <button
+                  key={s.id}
+                  className={`piece-chip${soundSet === s.id ? " active" : ""}`}
+                  onClick={() => {
+                    setSoundSet(s.id);
+                    // Audition it right away — hearing beats guessing. The
+                    // first tap may fall back to the synth while the sample
+                    // decodes; play again shortly after so the real one lands.
+                    playSound("move", s.id);
+                    setTimeout(() => playSound("capture", s.id), 350);
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
           {/* Vibration only matters on touch devices; hide it on desktop. */}
           {typeof navigator !== "undefined" && (navigator.maxTouchPoints > 0 || "ontouchstart" in window) && (
             <Toggle on={haptics} onClick={() => setHaptics(!haptics)} label="Vibration" sub="Haptic feedback on moves" />

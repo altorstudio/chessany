@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useStore } from "./store";
-import { useFeedback } from "./feedback";
+import { preloadSounds, useFeedback } from "./feedback";
 import { probeNativeEngines } from "./engines/registry";
 import { useNav } from "./nav";
 import { Sidebar } from "./components/Sidebar";
@@ -43,6 +43,8 @@ export default function App() {
       setProbed(true);
       void selectEngine(engineId);
     })();
+    // Warm the selected sound set so the first move plays the real sample.
+    preloadSounds();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

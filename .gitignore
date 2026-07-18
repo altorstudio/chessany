@@ -30,3 +30,6 @@ npm-debug.log*
 
 # Piece sets (SVGs) are fetched via `npm run pieces:fetch`.
 public/pieces/
+
+# Sound samples are fetched via `npm run sounds:fetch`.
+public/sounds/

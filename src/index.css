@@ -241,6 +241,9 @@ html, body, #root {
 .settings-modal .theme-swatches,
 .settings-modal .pref-row { padding-left: 0; padding-right: 0; }
 .piece-chips { display: flex; gap: 8px; }
+/* Sound-style chips sit under the Sound toggle and wrap on narrow screens. */
+.sound-styles { flex-wrap: wrap; margin: 2px 0 10px; }
+.sound-styles .piece-chip { flex: 1 1 30%; padding: 7px 6px; font-size: 12px; }
 .piece-chip { flex: 1; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 9px; padding: 9px; font: 600 13px var(--font-sans); cursor: pointer; }
 .piece-chip:hover { border-color: #4f5570; }
 .piece-chip.active { border-color: var(--accent); color: var(--accent-light); background: rgba(122,110,240,.1); }
@@ -1038,8 +1041,25 @@ html, body, #root {
 @keyframes ch-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .28; } }
 
 /* Board + vertical eval bar */
-.board-eval-row { display: flex; gap: 8px; align-items: stretch; }
+.board-eval-row { display: flex; gap: 8px; align-items: stretch; position: relative; }
 .board-eval-row .board-wrap { flex: 1; }
+/* Current-move chip shown over the board while it auto-plays. */
+.autoplay-move {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border-strong);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 4px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+}
 /* Lichess-style evaluation gauge: light bar = White's share, dark overlay from
    the top = Black's, with tick marks, a zero line, and an inset shadow. */
 .eval-gauge {
