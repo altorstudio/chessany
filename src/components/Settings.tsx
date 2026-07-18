@@ -1,10 +1,12 @@
 import { playSound, useFeedback, type BoardTheme, type PieceSet, type SoundSet, type Theme } from "../feedback";
 
-// "Wood" is the built-in synth; the rest are recorded sets (lichess Enigmahack,
-// AGPLv3+) fetched to public/sounds. Tapping a chip auditions it immediately.
+// "Board" is real recorded wood (Kenney CC0, the default); "Wood" is the
+// built-in synth; the rest are lichess Enigmahack (AGPLv3+) sets fetched to
+// public/sounds. Tapping a chip auditions it immediately.
 const SOUND_STYLES: { id: SoundSet; label: string }[] = [
+  { id: "board", label: "Board" },
+  { id: "wood", label: "Synth" },
   { id: "piano", label: "Piano" },
-  { id: "wood", label: "Wood" },
   { id: "nes", label: "Retro" },
   { id: "futuristic", label: "Futuristic" },
   { id: "sfx", label: "Cinematic" },

@@ -14,19 +14,23 @@ const LS_KEY = "chessany.feedback";
 export type BoardTheme = "walnut" | "forest" | "slate" | "coffee";
 export type PieceSet = "cburnett" | "merida" | "alpha" | "maestro" | "staunty" | "fresca";
 export const PIECE_SETS: PieceSet[] = ["cburnett", "merida", "alpha", "maestro", "staunty", "fresca"];
-// "wood" is the built-in synthesized knock; the rest are recorded sample sets
-// (lichess's Enigmahack AGPLv3+ sets, fetched to public/sounds/<set>/).
-export type SoundSet = "wood" | "piano" | "nes" | "futuristic" | "sfx";
-export const SOUND_SETS: SoundSet[] = ["piano", "wood", "nes", "futuristic", "sfx"];
+// "board" (default) is real recorded wood impacts (Kenney, CC0 — committed in
+// public/sounds/board); "wood" is the built-in synthesized knock; the rest are
+// lichess's Enigmahack AGPLv3+ sample sets, fetched to public/sounds/<set>/.
+export type SoundSet = "board" | "wood" | "piano" | "nes" | "futuristic" | "sfx";
+export const SOUND_SETS: SoundSet[] = ["board", "wood", "piano", "nes", "futuristic", "sfx"];
 export type Theme = "dark" | "light";
 interface Prefs { sound: boolean; haptics: boolean; coach: boolean; boardTheme: BoardTheme; pieceSet: PieceSet; soundSet: SoundSet; theme: Theme }
 function loadPrefs(): Prefs {
-  const def: Prefs = { sound: true, haptics: true, coach: false, boardTheme: "walnut", pieceSet: "cburnett", soundSet: "piano", theme: "dark" };
+  const def: Prefs = { sound: true, haptics: true, coach: false, boardTheme: "walnut", pieceSet: "cburnett", soundSet: "board", theme: "dark" };
   try {
     const p: Prefs = { ...def, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}") };
     // Migration: sets that no longer exist (e.g. the old CDN "wiki") → default.
     if (!PIECE_SETS.includes(p.pieceSet)) p.pieceSet = def.pieceSet;
     if (!SOUND_SETS.includes(p.soundSet)) p.soundSet = def.soundSet;
+    // "piano" was briefly the silent default and was widely disliked — move it
+    // to the new recorded-board default (it stays available in Settings).
+    if (p.soundSet === "piano") p.soundSet = "board";
     return p;
   } catch {
     return def;

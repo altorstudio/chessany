@@ -1,0 +1,5 @@
+Move.mp3    — from "Impact Sounds" (impactWood_light_001) by Kenney.nl
+Capture.mp3 — from "Impact Sounds" (impactWood_medium_003) by Kenney.nl
+
+License: CC0 1.0 (public domain) — https://kenney.nl/assets/impact-sounds
+Converted to mono MP3 with leading silence trimmed.
