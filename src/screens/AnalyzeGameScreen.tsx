@@ -49,9 +49,14 @@ const DEMO_PGN =
   '1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Ba4 Nf6 5. O-O Be7 6. Re1 b5 7. Bb3 d6 8. c3 O-O 9. h3 Nb8 10. d4 Nbd7';
 
 // Per-position search limits for each report mode (shown in the Report tab).
+// Deep is two-pass: scout everything fast, then re-search only the interesting
+// positions (swings, non-best moves) at full depth — the deep time goes where
+// the verdicts come from, so it's several times faster than deep-on-everything.
+// That matters most on device, where ONE native engine runs positions in
+// sequence (the web fans out across a worker pool).
 const REPORT_MODES = {
   quick: { depth: 12, movetime: 1000 },
-  deep: { depth: 18, movetime: 6000 },
+  deep: { depth: 12, movetime: 1000, refine: { depth: 18, movetime: 6000 } },
 } as const;
 
 interface ParsedPgn {
@@ -749,6 +754,9 @@ export function AnalyzeGameScreen() {
                           {isNativeEngine(engineId)
                             ? `native · ${Math.max(1, (navigator.hardwareConcurrency || 4) - 1)} threads`
                             : `in-browser · ${Math.max(1, Math.min((navigator.hardwareConcurrency || 4) - 1, 4))}-worker pool`}
+                          {/* Live speed readout from the running analysis, so
+                              engine performance is visible on device. */}
+                          {lines[0]?.nps ? ` · ${lines[0].nps >= 1e6 ? `${(lines[0].nps / 1e6).toFixed(1)}M` : `${Math.round(lines[0].nps / 1e3)}k`} nps` : ""}
                         </span>
                       </div>
                       <div className="report-config-row">
@@ -757,7 +765,7 @@ export function AnalyzeGameScreen() {
                       </div>
                       <div className="report-config-row">
                         <span>🔬 Deep</span>
-                        <span>depth {REPORT_MODES.deep.depth} · ≤{REPORT_MODES.deep.movetime / 1000}s/move</span>
+                        <span>depth {REPORT_MODES.deep.refine.depth} on key positions · scout depth {REPORT_MODES.deep.depth}</span>
                       </div>
                     </div>
                   )}

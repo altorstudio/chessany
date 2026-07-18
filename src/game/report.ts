@@ -734,6 +734,14 @@ export interface ReportOptions {
    * tactical cause (extra engine searches on a few moves). Defaults to on.
    */
   probe?: boolean;
+  /**
+   * Two-pass mode: scout every position at `depth`, then re-search only the
+   * INTERESTING positions (eval swings, moves that differ from the scout's
+   * best) at this deeper setting. The deep time goes exactly where verdicts
+   * come from, so a report is ~3-5x faster than searching everything deeply —
+   * which matters most on device, where ONE native engine runs sequentially.
+   */
+  refine?: { depth: number; movetime: number };
 }
 
 export async function generateReport(
@@ -751,37 +759,70 @@ export async function generateReport(
   await Promise.all(pool.map((e) => e.init()));
 
   const posEvals: PosEval[] = new Array(total);
-  let next = 0;
   let done = 0;
+  let grandTotal = total;
 
   // Cancellation: stop the engines so any in-flight search resolves, letting the
   // workers exit promptly when the caller aborts (e.g. loads a different game).
   const onAbort = () => pool.forEach((e) => { try { e.stop(); } catch { /* ignore */ } });
   signal?.addEventListener("abort", onAbort);
 
-  // Each worker pulls the next position index until the queue is drained.
-  const runWorker = async (engine: Engine) => {
-    while (true) {
-      if (signal?.aborted) return;
-      const i = next++;
-      if (i >= total) return;
-      const fen = game.fens[i];
-      const whiteToMove = fen.split(" ")[1] !== "b";
-      const { best, second } = await evaluatePosition(engine, fen, opts.depth, opts.movetime);
-      if (signal?.aborted) return;
-      posEvals[i] = {
-        white: evalWhiteCp(best.cp, best.mate, whiteToMove),
-        bestMove: best.pv[0] ?? null,
-        bestPv: best.pv,
-        secondWhite: second ? evalWhiteCp(second.cp, second.mate, whiteToMove) : null,
-        mateWhite: best.mate !== undefined ? (whiteToMove ? best.mate : -best.mate) : null,
-      };
-      onProgress(++done, total);
-    }
+  const searchInto = async (engine: Engine, i: number, depth: number, movetime: number) => {
+    const fen = game.fens[i];
+    const whiteToMove = fen.split(" ")[1] !== "b";
+    const { best, second } = await evaluatePosition(engine, fen, depth, movetime);
+    if (signal?.aborted) return;
+    posEvals[i] = {
+      white: evalWhiteCp(best.cp, best.mate, whiteToMove),
+      bestMove: best.pv[0] ?? null,
+      bestPv: best.pv,
+      secondWhite: second ? evalWhiteCp(second.cp, second.mate, whiteToMove) : null,
+      mateWhite: best.mate !== undefined ? (whiteToMove ? best.mate : -best.mate) : null,
+    };
+    onProgress(++done, grandTotal);
+  };
+
+  // Run `indices` through the pool, each worker pulling the next index.
+  const runPass = async (indices: number[], depth: number, movetime: number) => {
+    let next = 0;
+    const worker = async (engine: Engine) => {
+      while (true) {
+        if (signal?.aborted) return;
+        const k = next++;
+        if (k >= indices.length) return;
+        await searchInto(engine, indices[k], depth, movetime);
+      }
+    };
+    await Promise.all(pool.map((e) => worker(e)));
   };
 
   try {
-    await Promise.all(pool.map((e) => runWorker(e)));
+    // Pass 1 — scout every position at the base depth.
+    await runPass(Array.from({ length: total }, (_, i) => i), opts.depth, opts.movetime);
+
+    // Pass 2 (two-pass mode) — re-search only the interesting positions deeply:
+    // where the win% swings (a candidate mistake) or the played move differs
+    // from the scout's best (a candidate error / missed win). The verdicts read
+    // from exactly these positions, so they get full depth while the calm bulk
+    // of the game keeps the fast scout evals.
+    if (opts.refine && !signal?.aborted) {
+      const refine = new Set<number>();
+      const pct = posEvals.map((p) => winPct(p.white));
+      for (let i = 0; i < game.sans.length; i++) {
+        const swing = Math.abs(pct[i + 1] - pct[i]);
+        const notBest = posEvals[i].bestMove && game.uci[i].slice(0, 4) !== posEvals[i].bestMove!.slice(0, 4);
+        if (swing >= 5 || notBest) {
+          refine.add(i);
+          refine.add(i + 1);
+        }
+      }
+      const idx = [...refine].filter((i) => i >= 0 && i < total).sort((a, b) => a - b);
+      if (idx.length) {
+        grandTotal = total + idx.length;
+        onProgress(done, grandTotal);
+        await runPass(idx, opts.refine.depth, opts.refine.movetime);
+      }
+    }
   } finally {
     signal?.removeEventListener("abort", onAbort);
   }
@@ -902,11 +943,15 @@ export async function generateReport(
   try {
     if (opts.probe !== false && probeIdx.length && !signal?.aborted) {
       const targets = probeIdx.slice(0, 24); // bound the total probed positions
+      // Probes reason about flagged moves, which in two-pass mode were refined
+      // at the deeper setting — anchor the probe depths to that, not the scout.
+      const evalDepth = opts.refine?.depth ?? opts.depth;
+      const evalMovetime = opts.refine?.movetime ?? opts.movetime;
       // Deepen the forcing line a bit beyond the eval depth so it resolves into a
       // concrete outcome we can name (a promotion, a won piece, a mate).
-      const lineLimits = { depth: Math.min(opts.depth + 6, 22), movetime: Math.min(opts.movetime * 2, 2500) };
+      const lineLimits = { depth: Math.min(evalDepth + 6, 22), movetime: Math.min(evalMovetime * 2, 2500) };
       // Piece-removal probe is the cheaper fallback when the line stays murky.
-      const removeLimits = { depth: Math.min(opts.depth, 10), movetime: Math.min(opts.movetime, 400) };
+      const removeLimits = { depth: Math.min(evalDepth, 10), movetime: Math.min(evalMovetime, 400) };
       const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
       let pn = 0;
       const probeWorker = async (engine: Engine) => {
