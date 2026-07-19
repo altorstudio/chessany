@@ -25,11 +25,13 @@
   --font-serif: "Newsreader", Georgia, serif;
   --header-border: #2a302a;
   --toggle-off: #3a423a;
-  /* Neumorphic light model: soft dark shadow bottom-right, soft light top-left.
-     Strong, roomy extrusion — the surface is one material, not layered cards. */
-  --neu-out: 9px 9px 22px rgba(8, 10, 8, .6), -7px -7px 18px rgba(255, 255, 255, .055);
-  --neu-sm: 5px 5px 12px rgba(8, 10, 8, .5), -4px -4px 10px rgba(255, 255, 255, .05);
-  --neu-in: inset 4px 4px 9px rgba(8, 10, 8, .55), inset -3px -3px 8px rgba(255, 255, 255, .05);
+  /* Dark-room light model: depth from the dark drop shadow; the light comes
+     from an INSET top-left bevel, which hugs the corner radius exactly — an
+     outer white glow on a dark surface blooms and renders square-cornered on
+     some GPUs (the "straight corner" artifact). */
+  --neu-out: 9px 9px 22px rgba(8, 10, 8, .6), inset 1px 1px 0 rgba(255, 255, 255, .06);
+  --neu-sm: 5px 5px 12px rgba(8, 10, 8, .5), inset 1px 1px 0 rgba(255, 255, 255, .07);
+  --neu-in: inset 4px 4px 9px rgba(8, 10, 8, .55), inset -1px -1px 0 rgba(255, 255, 255, .05);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
