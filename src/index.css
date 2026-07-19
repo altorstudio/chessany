@@ -63,9 +63,9 @@
   --toggle-off: #cdd3c6;
   /* Same model as Night: straight-down drop shadow + inset top-left bevel —
      diagonal offsets and outer glows both rasterize square on some GPUs. */
-  --neu-out: inset 1.5px 1.5px 0 rgba(255, 255, 255, .95);
-  --neu-sm: inset 1px 1px 0 rgba(255, 255, 255, .95);
-  --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -1px -1px 0 rgba(255, 255, 255, .9);
+  --neu-out: inset 0.1px 0.1px 0 rgba(255, 255, 255, .95);
+  --neu-sm: inset 0.1px 0.1px 0 rgba(255, 255, 255, .95);
+  --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -0.1px -0.1px 0 rgba(255, 255, 255, .9);
   --drop: drop-shadow(0 8px 9px rgba(146, 155, 136, .5));
   --drop-sm: drop-shadow(0 4px 4px rgba(146, 155, 136, .45));
 }
