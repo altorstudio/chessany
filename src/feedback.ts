@@ -22,7 +22,8 @@ export const SOUND_SETS: SoundSet[] = ["board", "wood", "piano", "nes", "futuris
 export type Theme = "dark" | "light";
 interface Prefs { sound: boolean; haptics: boolean; coach: boolean; boardTheme: BoardTheme; pieceSet: PieceSet; soundSet: SoundSet; theme: Theme }
 function loadPrefs(): Prefs {
-  const def: Prefs = { sound: true, haptics: true, coach: false, boardTheme: "walnut", pieceSet: "cburnett", soundSet: "board", theme: "dark" };
+  // Day is the default — the soft light material is the app's primary look.
+  const def: Prefs = { sound: true, haptics: true, coach: false, boardTheme: "walnut", pieceSet: "cburnett", soundSet: "board", theme: "light" };
   try {
     const p: Prefs = { ...def, ...JSON.parse(localStorage.getItem(LS_KEY) || "{}") };
     // Migration: sets that no longer exist (e.g. the old CDN "wiki") → default.

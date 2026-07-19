@@ -1,49 +1,63 @@
 @import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap");
 
 :root {
-  /* Chessany design system (indigo + violet). */
-  --bg: #10121b;
-  --rail: #171a26;
-  --surface: #1c1f2e;       /* cards / panels */
-  --surface-2: #252a3c;     /* buttons / inputs */
-  --border: #2b3043;
-  --border-soft: #212640;
-  --border-strong: #3e4660;
-  --text: #e9ebf5;
-  --text-2: #b3b8d2;
-  --text-dim: #7d83a0;
-  --text-dimmer: #646a86;
-  --accent: #7a6ef0;
-  --accent-light: #a99dff;
-  --accent-2: #5a4ec9;
-  --white-eval: #e6e9f2;
-  --black-eval: #1c2030;
+  /* Chessany "soft club room" design system (Monotree-style: one soft material,
+     surfaces gently extruded from it, selection pressed INTO it, and a single
+     fresh green accent). Night theme = the same material in a dark room. */
+  --bg: #20241f;
+  --rail: #242923;
+  --surface: #272c26;       /* cards / panels */
+  --surface-2: #2e342d;     /* buttons / inputs */
+  --border: #333a32;
+  --border-soft: #2c322b;
+  --border-strong: #465045;
+  --text: #e8ece6;
+  --text-2: #bac2b8;
+  --text-dim: #879086;
+  --text-dimmer: #6b756a;
+  --accent: #4fbd60;
+  --accent-light: #8ce295;  /* accent-coloured text/labels */
+  --accent-2: #37a94b;
+  --on-accent: #0d2413;     /* ink on green fills */
+  --white-eval: #e9ede7;
+  --black-eval: #161a16;
   --font-sans: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
   --font-serif: "Newsreader", Georgia, serif;
-  --header-border: #1b1f2e;
-  --toggle-off: #333a50;
+  --header-border: #2a302a;
+  --toggle-off: #3a423a;
+  /* Neumorphic light model: soft dark shadow bottom-right, soft light top-left. */
+  --neu-out: 6px 6px 14px rgba(9, 11, 9, .5), -5px -5px 12px rgba(255, 255, 255, .045);
+  --neu-sm: 3px 3px 7px rgba(9, 11, 9, .45), -2.5px -2.5px 6px rgba(255, 255, 255, .04);
+  --neu-in: inset 3px 3px 7px rgba(9, 11, 9, .5), inset -2.5px -2.5px 6px rgba(255, 255, 255, .04);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
 
-/* Day theme — light palette (accent stays violet). */
+/* Day theme (default) — the Monotree palette: warm sage-grey material, white-ish
+   lifted surfaces, ink text, green accent. */
 :root[data-theme="light"] {
-  --bg: #eef0f6;
-  --rail: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f1f3f9;
-  --border: #e2e5ee;
-  --border-soft: #ebedf3;
-  --border-strong: #d2d7e3;
-  --text: #1b1f2e;
-  --text-2: #41475c;
-  --text-dim: #6f7690;
-  --text-dimmer: #9aa0b4;
-  --accent-light: #5a4ec9;
-  --white-eval: #f4f6fb;
-  --black-eval: #3a4159;
-  --header-border: #e2e5ee;
-  --toggle-off: #cdd2de;
+  --bg: #eceee8;
+  --rail: #f3f5ef;
+  --surface: #f4f6f0;
+  --surface-2: #e9ece3;
+  --border: #dee2d6;
+  --border-soft: #e6e9df;
+  --border-strong: #c8cfbf;
+  --text: #20241f;
+  --text-2: #454b44;
+  --text-dim: #7f877d;
+  --text-dimmer: #9aa296;
+  --accent: #46c15c;
+  --accent-light: #1f9038;  /* darker green for readable accent text on light */
+  --accent-2: #2fa84a;
+  --on-accent: #0e2b14;
+  --white-eval: #f6f8f2;
+  --black-eval: #3b433a;
+  --header-border: #dfe3d7;
+  --toggle-off: #cdd3c6;
+  --neu-out: 7px 7px 16px rgba(150, 158, 141, .42), -6px -6px 14px rgba(255, 255, 255, .95);
+  --neu-sm: 3px 3px 8px rgba(150, 158, 141, .4), -3px -3px 7px rgba(255, 255, 255, .9);
+  --neu-in: inset 3px 3px 7px rgba(140, 148, 131, .45), inset -3px -3px 7px rgba(255, 255, 255, .85);
 }
 
 * { box-sizing: border-box; }
@@ -1469,3 +1483,104 @@ html, body, #root {
 
 /* The nav bar is mobile-only; desktop keeps each screen's own controls. */
 .board-nav-bar { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Soft-UI skin (Monotree direction)
+   One material: surfaces EXTRUDE from the page with the dual soft shadow
+   (--neu-out/--neu-sm); anything SELECTED is pressed INTO it (--neu-in) and
+   speaks green. Chrome only — layout stays untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar-thumb { background: var(--border-strong); }
+
+/* Brand: the logo tile goes green. */
+.rail-logo {
+  background: linear-gradient(145deg, #7fdb74, var(--accent-2));
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.rail-item:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.rail-item.active {
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
+  color: var(--accent-light);
+  box-shadow: var(--neu-in);
+}
+.rail-collapse:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+
+/* Cards float; their borders nearly disappear (the shadow does the work). */
+.panel, .modal, .review-bar, .coach-pause, .move-feedback, .line-preview {
+  border-color: var(--border-soft);
+  box-shadow: var(--neu-out);
+}
+.report-graph { box-shadow: var(--neu-out); }
+.board-wrap { box-shadow: var(--neu-out); border-radius: 4px; }
+
+/* Buttons: raised pebbles; pressing sinks them into the surface. */
+.btn {
+  background: var(--surface);
+  border-color: var(--border-soft);
+  box-shadow: var(--neu-sm);
+  transition: box-shadow .12s ease, transform .12s ease;
+}
+.btn:hover:not(:disabled) { border-color: var(--border-strong); }
+.btn:active:not(:disabled) { box-shadow: var(--neu-in); transform: translateY(1px); }
+.btn.primary {
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border-strong));
+  color: var(--on-accent);
+}
+.btn.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+.btn:disabled { box-shadow: none; }
+.board-nav-bar .nav-btn { box-shadow: var(--neu-sm); }
+.board-nav-bar .nav-btn:active:not(:disabled) { box-shadow: var(--neu-in); }
+
+/* Tabs: the active tab is pressed into the bar, in green. */
+.panel-tabs { border-color: var(--border-soft); box-shadow: var(--neu-sm); }
+.panel-tab.active { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent-light); box-shadow: var(--neu-in); }
+.loader-tab.active { color: var(--accent-light); border-bottom-color: var(--accent); }
+
+/* Choice chips/cards (pieces, sound styles, themes, engines): selected = green. */
+.piece-chip:hover, .piece-card:hover { border-color: var(--border-strong); }
+.piece-chip.active, .piece-card.active {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent-light);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow: var(--neu-in);
+}
+.piece-chip, .piece-card { box-shadow: var(--neu-sm); border-color: var(--border-soft); background: var(--surface); }
+.engine-option.selected { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.theme-swatch { border-color: var(--border-soft); box-shadow: var(--neu-sm); }
+.theme-swatch.active { border-color: var(--accent); box-shadow: var(--neu-in); }
+
+/* Inputs read as carved into the surface. */
+.pgn-input, .text-input, select {
+  box-shadow: var(--neu-in);
+  border-color: var(--border-soft);
+  background: var(--surface-2);
+}
+.pgn-input:focus-visible, .text-input:focus-visible, select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 1px;
+}
+button:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 2px; }
+
+/* Green fills carry ink, not white. */
+.tree-cell.current, .tree-move.current, .line-move.current, .mv-btn.current { color: var(--on-accent); }
+.tree-cell.current .mv-badge { color: var(--on-accent) !important; }
+.tree-cell.flagged.current .tree-badge { color: var(--on-accent) !important; }
+.mv-btn.variation.current { color: var(--on-accent); }
+.tree-move.current .tree-num { color: var(--on-accent); }
+
+/* Small green touches that used to be violet. */
+.movelist-new, .link-btn { color: var(--accent-light); }
+.moment-label { color: var(--text-dim); }
+.player-strip.to-move .player-clock, .player-strip.to-move .player-name { color: var(--accent-light); }
+.review-chip.white { background: var(--white-eval); color: #20241f; box-shadow: var(--neu-sm); }
+.review-chip.black { background: var(--black-eval); color: var(--white-eval); box-shadow: var(--neu-sm); border: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn, .board-nav-bar .nav-btn { transition: none; }
+}
+
+/* Light-theme legibility touches. */
+.player-dot.light { border: 1.5px solid var(--border-strong); }
+.player-elo { color: var(--on-accent); }
