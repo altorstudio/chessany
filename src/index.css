@@ -100,7 +100,6 @@ html, body, #root {
 .rail-logo {
   width: 38px; height: 38px; border-radius: 9px; background: linear-gradient(145deg, #9b8eff, #5a4ec9);
   display: flex; align-items: center; justify-content: center; font-size: 24px; color: #fff;
-  box-shadow: 0 4px 14px -4px rgba(122,110,240,.6);
 }
 .rail-name { font-family: var(--font-serif); font-size: 21px; font-weight: 600; letter-spacing: -.2px; line-height: 1; }
 .rail-tag { font-size: 9.5px; letter-spacing: .22em; color: var(--text-dim); text-transform: uppercase; margin-top: 3px; }
@@ -157,7 +156,7 @@ html, body, #root {
 .main-eyebrow { font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 5px; }
 .main-title { margin: 0; font-family: var(--font-serif); font-size: 30px; font-weight: 600; letter-spacing: -.3px; }
 .engine-status-pill { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
-.engine-dot { width: 8px; height: 8px; border-radius: 50%; background: #7bbf5a; box-shadow: 0 0 8px #7bbf5a; }
+.engine-dot { width: 8px; height: 8px; border-radius: 50%; background: #7bbf5a; filter: drop-shadow(0 0 3px #7bbf5a); }
 /* Cap + center the working area so it stays balanced whether the rail is open
    or collapsed (otherwise the board hugs the left with dead space on the right). */
 .main-content { flex: 1; width: 100%; max-width: 1180px; margin: 0 auto; padding: 28px 34px calc(40px + env(safe-area-inset-bottom)); }
@@ -1086,7 +1085,7 @@ html, body, #root {
   padding: 4px 12px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .35));
 }
 /* Lichess-style evaluation gauge: light bar = White's share, dark overlay from
    the top = Black's, with tick marks, a zero line, and an inset shadow. */
@@ -1231,7 +1230,7 @@ html, body, #root {
   font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .35));
   z-index: 2;
 }
 .graph-tip-move { font-weight: 700; }
@@ -1287,7 +1286,7 @@ html, body, #root {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  filter: drop-shadow(0 7px 12px rgba(0, 0, 0, .4));
   cursor: pointer;
   animation: toast-in 0.18s ease;
 }
@@ -1461,7 +1460,7 @@ html, body, #root {
     border-top: 3px solid var(--cls-color, var(--accent));
     border-radius: 16px 16px 0 0;
     padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.45);
+    filter: drop-shadow(0 -8px 14px rgba(0, 0, 0, .4));
   }
   .coach-pause-label { font-size: 13px; margin-bottom: 12px; text-align: center; }
   .coach-pause .row { gap: 10px; }
@@ -1509,7 +1508,7 @@ html, body, #root {
 /* Brand: the logo tile goes green. */
 .rail-logo {
   background: linear-gradient(145deg, #7fdb74, var(--accent-2));
-  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent) 60%, transparent);
+  filter: drop-shadow(0 4px 6px color-mix(in srgb, var(--accent) 50%, transparent));
 }
 .rail { border-right-color: transparent; }
 .main-header { border-bottom-color: transparent; }
@@ -1595,7 +1594,7 @@ html, body, #root {
 .report-progress-bar { box-shadow: var(--neu-in); background: var(--surface-2); height: 10px; border-radius: 6px; }
 .acc-bar { box-shadow: var(--neu-in); background: var(--surface-2); }
 .pref-track { box-shadow: var(--neu-in); }
-.pref-knob { box-shadow: 0 2px 4px rgba(0, 0, 0, .3); }
+.pref-knob { filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .3)); }
 .pgn-input:focus-visible, .text-input:focus-visible, select:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 1px;
