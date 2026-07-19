@@ -25,12 +25,11 @@
   --font-serif: "Newsreader", Georgia, serif;
   --header-border: #2a302a;
   --toggle-off: #3a423a;
-  /* Dark-room light model: depth from the dark drop shadow; the light comes
-     from an INSET top-left bevel, which hugs the corner radius exactly — an
-     outer white glow on a dark surface blooms and renders square-cornered on
-     some GPUs (the "straight corner" artifact). */
-  --neu-out: 9px 9px 22px rgba(8, 10, 8, .6), inset 1px 1px 0 rgba(255, 255, 255, .06);
-  --neu-sm: 5px 5px 12px rgba(8, 10, 8, .5), inset 1px 1px 0 rgba(255, 255, 255, .07);
+  /* Light model: depth from a STRAIGHT-DOWN drop shadow (diagonal offsets
+     expose square-cornered shadow rasterization on some GPUs), light from an
+     inset top-left bevel that hugs the corner radius exactly. */
+  --neu-out: 0 10px 22px rgba(8, 10, 8, .55), inset 1px 1px 0 rgba(255, 255, 255, .06);
+  --neu-sm: 0 5px 12px rgba(8, 10, 8, .45), inset 1px 1px 0 rgba(255, 255, 255, .07);
   --neu-in: inset 4px 4px 9px rgba(8, 10, 8, .55), inset -1px -1px 0 rgba(255, 255, 255, .05);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
@@ -58,11 +57,10 @@
   --black-eval: #3b433a;
   --header-border: #dfe3d7;
   --toggle-off: #cdd3c6;
-  /* Same bevel model as Night: depth from the soft dark drop shadow, light
-     from an inset top-left bevel that hugs the corner radius — outer white
-     glows render square-cornered on some GPUs/WebViews. */
-  --neu-out: 8px 8px 18px rgba(146, 155, 136, .45), inset 1.5px 1.5px 0 rgba(255, 255, 255, .95);
-  --neu-sm: 4px 4px 10px rgba(146, 155, 136, .42), inset 1px 1px 0 rgba(255, 255, 255, .95);
+  /* Same model as Night: straight-down drop shadow + inset top-left bevel —
+     diagonal offsets and outer glows both rasterize square on some GPUs. */
+  --neu-out: 0 9px 20px rgba(146, 155, 136, .5), inset 1.5px 1.5px 0 rgba(255, 255, 255, .95);
+  --neu-sm: 0 4px 10px rgba(146, 155, 136, .45), inset 1px 1px 0 rgba(255, 255, 255, .95);
   --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -1px -1px 0 rgba(255, 255, 255, .9);
 }
 
@@ -1549,7 +1547,7 @@ html, body, #root {
   background: var(--accent);
   border-color: transparent;
   color: var(--on-accent);
-  box-shadow: 5px 5px 12px color-mix(in srgb, var(--accent-2) 35%, rgba(0,0,0,.25)), var(--neu-sm);
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--accent-2) 35%, rgba(0,0,0,.25)), var(--neu-sm);
 }
 .btn.primary:hover { background: var(--accent-2); color: var(--on-accent); }
 .btn:disabled { box-shadow: none; }
