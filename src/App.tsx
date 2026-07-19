@@ -28,7 +28,6 @@ export default function App() {
   const mode = useStore((s) => s.mode);
   const selectEngine = useStore((s) => s.selectEngine);
   const engineId = useStore((s) => s.engineId);
-  const engineReady = useStore((s) => s.engineReady);
   const boardTheme = useFeedback((s) => s.boardTheme);
   const pieceSet = useFeedback((s) => s.pieceSet);
   const theme = useFeedback((s) => s.theme);
@@ -86,10 +85,6 @@ export default function App() {
             <div className="main-header-text">
               <div className="main-eyebrow">{eyebrow}</div>
               <h1 className="main-title">{title}</h1>
-            </div>
-            <div className="engine-status-pill">
-              <span className="engine-dot" />
-              Stockfish {engineReady ? (view === "play" && !analyzing ? "· live" : "· ready") : "· loading"}
             </div>
           </div>
         </header>

@@ -4,10 +4,10 @@
   /* Chessany "soft club room" design system (Monotree-style: one soft material,
      surfaces gently extruded from it, selection pressed INTO it, and a single
      fresh green accent). Night theme = the same material in a dark room. */
-  --bg: #20241f;
+  --bg: #242923;
   --rail: #242923;
-  --surface: #272c26;       /* cards / panels */
-  --surface-2: #2e342d;     /* buttons / inputs */
+  --surface: #242923;       /* ONE material: cards ARE the page, lifted by shadow */
+  --surface-2: #202520;     /* carved wells (inputs, tracks) */
   --border: #333a32;
   --border-soft: #2c322b;
   --border-strong: #465045;
@@ -25,10 +25,11 @@
   --font-serif: "Newsreader", Georgia, serif;
   --header-border: #2a302a;
   --toggle-off: #3a423a;
-  /* Neumorphic light model: soft dark shadow bottom-right, soft light top-left. */
-  --neu-out: 6px 6px 14px rgba(9, 11, 9, .5), -5px -5px 12px rgba(255, 255, 255, .045);
-  --neu-sm: 3px 3px 7px rgba(9, 11, 9, .45), -2.5px -2.5px 6px rgba(255, 255, 255, .04);
-  --neu-in: inset 3px 3px 7px rgba(9, 11, 9, .5), inset -2.5px -2.5px 6px rgba(255, 255, 255, .04);
+  /* Neumorphic light model: soft dark shadow bottom-right, soft light top-left.
+     Strong, roomy extrusion — the surface is one material, not layered cards. */
+  --neu-out: 9px 9px 22px rgba(8, 10, 8, .6), -7px -7px 18px rgba(255, 255, 255, .055);
+  --neu-sm: 5px 5px 12px rgba(8, 10, 8, .5), -4px -4px 10px rgba(255, 255, 255, .05);
+  --neu-in: inset 4px 4px 9px rgba(8, 10, 8, .55), inset -3px -3px 8px rgba(255, 255, 255, .05);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
@@ -37,9 +38,9 @@
    lifted surfaces, ink text, green accent. */
 :root[data-theme="light"] {
   --bg: #eceee8;
-  --rail: #f3f5ef;
-  --surface: #f4f6f0;
-  --surface-2: #e9ece3;
+  --rail: #eceee8;
+  --surface: #eceee8;
+  --surface-2: #e2e5dc;
   --border: #dee2d6;
   --border-soft: #e6e9df;
   --border-strong: #c8cfbf;
@@ -55,9 +56,9 @@
   --black-eval: #3b433a;
   --header-border: #dfe3d7;
   --toggle-off: #cdd3c6;
-  --neu-out: 7px 7px 16px rgba(150, 158, 141, .42), -6px -6px 14px rgba(255, 255, 255, .95);
-  --neu-sm: 3px 3px 8px rgba(150, 158, 141, .4), -3px -3px 7px rgba(255, 255, 255, .9);
-  --neu-in: inset 3px 3px 7px rgba(140, 148, 131, .45), inset -3px -3px 7px rgba(255, 255, 255, .85);
+  --neu-out: 10px 10px 24px rgba(146, 155, 136, .5), -9px -9px 20px rgba(255, 255, 255, 1);
+  --neu-sm: 5px 5px 12px rgba(146, 155, 136, .48), -5px -5px 10px rgba(255, 255, 255, .95);
+  --neu-in: inset 4px 4px 9px rgba(136, 145, 126, .5), inset -4px -4px 9px rgba(255, 255, 255, .95);
 }
 
 * { box-sizing: border-box; }
@@ -1498,65 +1499,80 @@ html, body, #root {
   background: linear-gradient(145deg, #7fdb74, var(--accent-2));
   box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent) 60%, transparent);
 }
+.rail { border-right-color: transparent; }
+.main-header { border-bottom-color: transparent; }
 .rail-item:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .rail-item.active {
-  background: color-mix(in srgb, var(--accent) 11%, transparent);
+  background: var(--surface);
   color: var(--accent-light);
-  box-shadow: var(--neu-in);
+  box-shadow: var(--neu-sm);
 }
 .rail-collapse:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
 
-/* Cards float; their borders nearly disappear (the shadow does the work). */
+/* Everything is the same material — no borders, big soft extrusion, chunky
+   corners. Definition comes from light, not lines. */
 .panel, .modal, .review-bar, .coach-pause, .move-feedback, .line-preview {
-  border-color: var(--border-soft);
+  border-color: transparent;
+  border-radius: 18px;
   box-shadow: var(--neu-out);
 }
-.report-graph { box-shadow: var(--neu-out); }
+.report-graph { box-shadow: var(--neu-out); border-color: transparent; }
 .board-wrap { box-shadow: var(--neu-out); border-radius: 4px; }
+.rail-toggle { border-color: transparent; box-shadow: var(--neu-sm); border-radius: 13px; }
 
-/* Buttons: raised pebbles; pressing sinks them into the surface. */
+/* Buttons: puffy pebbles; pressing sinks them into the surface. */
 .btn {
   background: var(--surface);
-  border-color: var(--border-soft);
+  border-color: transparent;
+  border-radius: 13px;
   box-shadow: var(--neu-sm);
   transition: box-shadow .12s ease, transform .12s ease;
 }
-.btn:hover:not(:disabled) { border-color: var(--border-strong); }
+.btn:hover:not(:disabled) { color: var(--accent-light); }
 .btn:active:not(:disabled) { box-shadow: var(--neu-in); transform: translateY(1px); }
 .btn.primary {
   background: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 70%, var(--border-strong));
+  border-color: transparent;
   color: var(--on-accent);
+  box-shadow: 5px 5px 12px color-mix(in srgb, var(--accent-2) 35%, rgba(0,0,0,.25)), var(--neu-sm);
 }
-.btn.primary:hover { background: var(--accent-2); border-color: var(--accent-2); }
+.btn.primary:hover { background: var(--accent-2); color: var(--on-accent); }
 .btn:disabled { box-shadow: none; }
-.board-nav-bar .nav-btn { box-shadow: var(--neu-sm); }
+.board-nav-bar .nav-btn { box-shadow: var(--neu-sm); border-radius: 15px; }
 .board-nav-bar .nav-btn:active:not(:disabled) { box-shadow: var(--neu-in); }
 
-/* Tabs: the active tab is pressed into the bar, in green. */
-.panel-tabs { border-color: var(--border-soft); box-shadow: var(--neu-sm); }
-.panel-tab.active { background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent-light); box-shadow: var(--neu-in); }
+/* Tabs float on the material; the ACTIVE one is a raised green-labelled pill
+   (reference style: selection is lifted toward you). */
+.panel-tabs { border-color: transparent; background: transparent; box-shadow: none; padding: 4px 0; gap: 8px; }
+.panel-tab { border-radius: 13px; }
+.panel-tab.active { background: var(--surface); color: var(--accent-light); box-shadow: var(--neu-sm); }
 .loader-tab.active { color: var(--accent-light); border-bottom-color: var(--accent); }
 
-/* Choice chips/cards (pieces, sound styles, themes, engines): selected = green. */
-.piece-chip:hover, .piece-card:hover { border-color: var(--border-strong); }
+/* Choice chips/cards (pieces, sound styles, themes, engines): raised pebbles;
+   the selected one carries the green ring + label. */
+.piece-chip, .piece-card { box-shadow: var(--neu-sm); border-color: transparent; background: var(--surface); }
+.piece-chip:hover, .piece-card:hover { color: var(--accent-light); }
 .piece-chip.active, .piece-card.active {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
   color: var(--accent-light);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-  box-shadow: var(--neu-in);
+  background: var(--surface);
+  box-shadow: var(--neu-sm);
 }
-.piece-chip, .piece-card { box-shadow: var(--neu-sm); border-color: var(--border-soft); background: var(--surface); }
 .engine-option.selected { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.theme-swatch { border-color: var(--border-soft); box-shadow: var(--neu-sm); }
-.theme-swatch.active { border-color: var(--accent); box-shadow: var(--neu-in); }
+.theme-swatch { border-color: transparent; box-shadow: var(--neu-sm); }
+.theme-swatch.active { border-color: var(--accent); }
 
-/* Inputs read as carved into the surface. */
+/* Inputs, tracks and toggles read as carved wells. */
 .pgn-input, .text-input, select {
   box-shadow: var(--neu-in);
-  border-color: var(--border-soft);
+  border-color: transparent;
+  border-radius: 12px;
   background: var(--surface-2);
 }
+.report-progress-bar { box-shadow: var(--neu-in); background: var(--surface-2); height: 10px; border-radius: 6px; }
+.acc-bar { box-shadow: var(--neu-in); background: var(--surface-2); }
+.pref-track { box-shadow: var(--neu-in); }
+.pref-knob { box-shadow: 2px 2px 5px rgba(0, 0, 0, .3); }
 .pgn-input:focus-visible, .text-input:focus-visible, select:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 1px;
