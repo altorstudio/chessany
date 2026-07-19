@@ -28,9 +28,13 @@
   /* Light model: depth from a STRAIGHT-DOWN drop shadow (diagonal offsets
      expose square-cornered shadow rasterization on some GPUs), light from an
      inset top-left bevel that hugs the corner radius exactly. */
-  --neu-out: 0 10px 22px rgba(8, 10, 8, .55), inset 1px 1px 0 rgba(255, 255, 255, .06);
-  --neu-sm: 0 5px 12px rgba(8, 10, 8, .45), inset 1px 1px 0 rgba(255, 255, 255, .07);
+  --neu-out: inset 1px 1px 0 rgba(255, 255, 255, .06);
+  --neu-sm: inset 1px 1px 0 rgba(255, 255, 255, .07);
   --neu-in: inset 4px 4px 9px rgba(8, 10, 8, .55), inset -1px -1px 0 rgba(255, 255, 255, .05);
+  /* Depth via drop-shadow(): it blurs the element's real silhouette (radius
+     included), so shadow corners can NEVER rasterize square. */
+  --drop: drop-shadow(0 9px 10px rgba(8, 10, 8, .45));
+  --drop-sm: drop-shadow(0 4px 5px rgba(8, 10, 8, .4));
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
@@ -59,9 +63,11 @@
   --toggle-off: #cdd3c6;
   /* Same model as Night: straight-down drop shadow + inset top-left bevel —
      diagonal offsets and outer glows both rasterize square on some GPUs. */
-  --neu-out: 0 9px 20px rgba(146, 155, 136, .5), inset 1.5px 1.5px 0 rgba(255, 255, 255, .95);
-  --neu-sm: 0 4px 10px rgba(146, 155, 136, .45), inset 1px 1px 0 rgba(255, 255, 255, .95);
+  --neu-out: inset 1.5px 1.5px 0 rgba(255, 255, 255, .95);
+  --neu-sm: inset 1px 1px 0 rgba(255, 255, 255, .95);
   --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -1px -1px 0 rgba(255, 255, 255, .9);
+  --drop: drop-shadow(0 8px 9px rgba(146, 155, 136, .5));
+  --drop-sm: drop-shadow(0 4px 4px rgba(146, 155, 136, .45));
 }
 
 * { box-sizing: border-box; }
@@ -1512,6 +1518,7 @@ html, body, #root {
   background: var(--surface);
   color: var(--accent-light);
   box-shadow: var(--neu-sm);
+  filter: var(--drop-sm);
 }
 .rail-collapse:hover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
 
@@ -1521,17 +1528,18 @@ html, body, #root {
   border-color: transparent;
   border-radius: 18px;
   box-shadow: var(--neu-out);
+  filter: var(--drop);
 }
 /* Modals float OVER the dimmed backdrop, not on the material — the neumorphic
    white glow reads as a fog leak there. Plain downward elevation instead. */
 .modal {
   border-color: transparent;
   border-radius: 20px;
-  box-shadow: 0 24px 70px rgba(10, 14, 10, .45), 0 4px 16px rgba(10, 14, 10, .25);
+  filter: drop-shadow(0 18px 30px rgba(10, 14, 10, .4));
 }
-.report-graph { box-shadow: var(--neu-out); border-color: transparent; }
-.board-wrap { box-shadow: var(--neu-out); border-radius: 4px; }
-.rail-toggle { border-color: transparent; box-shadow: var(--neu-sm); border-radius: 13px; }
+.report-graph { box-shadow: var(--neu-out); filter: var(--drop); border-color: transparent; }
+.board-wrap { filter: var(--drop); border-radius: 4px; }
+.rail-toggle { border-color: transparent; box-shadow: var(--neu-sm); filter: var(--drop-sm); border-radius: 13px; }
 
 /* Buttons: puffy pebbles; pressing sinks them into the surface. */
 .btn {
@@ -1539,31 +1547,33 @@ html, body, #root {
   border-color: transparent;
   border-radius: 13px;
   box-shadow: var(--neu-sm);
-  transition: box-shadow .12s ease, transform .12s ease;
+  filter: var(--drop-sm);
+  transition: box-shadow .12s ease, transform .12s ease, filter .12s ease;
 }
 .btn:hover:not(:disabled) { color: var(--accent-light); }
-.btn:active:not(:disabled) { box-shadow: var(--neu-in); transform: translateY(1px); }
+.btn:active:not(:disabled) { box-shadow: var(--neu-in); filter: none; transform: translateY(1px); }
 .btn.primary {
   background: var(--accent);
   border-color: transparent;
   color: var(--on-accent);
-  box-shadow: 0 5px 12px color-mix(in srgb, var(--accent-2) 35%, rgba(0,0,0,.25)), var(--neu-sm);
+  box-shadow: var(--neu-sm);
+  filter: drop-shadow(0 5px 7px color-mix(in srgb, var(--accent-2) 40%, rgba(0, 0, 0, .3)));
 }
 .btn.primary:hover { background: var(--accent-2); color: var(--on-accent); }
-.btn:disabled { box-shadow: none; }
-.board-nav-bar .nav-btn { box-shadow: var(--neu-sm); border-radius: 15px; }
-.board-nav-bar .nav-btn:active:not(:disabled) { box-shadow: var(--neu-in); }
+.btn:disabled { box-shadow: none; filter: none; }
+.board-nav-bar .nav-btn { box-shadow: var(--neu-sm); filter: var(--drop-sm); border-radius: 15px; }
+.board-nav-bar .nav-btn:active:not(:disabled) { box-shadow: var(--neu-in); filter: none; }
 
 /* Tabs float on the material; the ACTIVE one is a raised green-labelled pill
    (reference style: selection is lifted toward you). */
 .panel-tabs { border-color: transparent; background: transparent; box-shadow: none; padding: 4px 0; gap: 8px; }
 .panel-tab { border-radius: 13px; }
-.panel-tab.active { background: var(--surface); color: var(--accent-light); box-shadow: var(--neu-sm); }
+.panel-tab.active { background: var(--surface); color: var(--accent-light); box-shadow: var(--neu-sm); filter: var(--drop-sm); }
 .loader-tab.active { color: var(--accent-light); border-bottom-color: var(--accent); }
 
 /* Choice chips/cards (pieces, sound styles, themes, engines): raised pebbles;
    the selected one carries the green ring + label. */
-.piece-chip, .piece-card { box-shadow: var(--neu-sm); border-color: transparent; background: var(--surface); }
+.piece-chip, .piece-card { box-shadow: var(--neu-sm); filter: var(--drop-sm); border-color: transparent; background: var(--surface); }
 .piece-chip:hover, .piece-card:hover { color: var(--accent-light); }
 .piece-chip.active, .piece-card.active {
   border-color: color-mix(in srgb, var(--accent) 65%, transparent);
@@ -1572,7 +1582,7 @@ html, body, #root {
   box-shadow: var(--neu-sm);
 }
 .engine-option.selected { border-color: color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
-.theme-swatch { border-color: transparent; box-shadow: var(--neu-sm); }
+.theme-swatch { border-color: transparent; box-shadow: var(--neu-sm); filter: var(--drop-sm); }
 .theme-swatch.active { border-color: var(--accent); }
 
 /* Inputs, tracks and toggles read as carved wells. */
@@ -1585,7 +1595,7 @@ html, body, #root {
 .report-progress-bar { box-shadow: var(--neu-in); background: var(--surface-2); height: 10px; border-radius: 6px; }
 .acc-bar { box-shadow: var(--neu-in); background: var(--surface-2); }
 .pref-track { box-shadow: var(--neu-in); }
-.pref-knob { box-shadow: 2px 2px 5px rgba(0, 0, 0, .3); }
+.pref-knob { box-shadow: 0 2px 4px rgba(0, 0, 0, .3); }
 .pgn-input:focus-visible, .text-input:focus-visible, select:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 1px;
@@ -1603,8 +1613,8 @@ button:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 55%, 
 .movelist-new, .link-btn { color: var(--accent-light); }
 .moment-label { color: var(--text-dim); }
 .player-strip.to-move .player-clock, .player-strip.to-move .player-name { color: var(--accent-light); }
-.review-chip.white { background: var(--white-eval); color: #20241f; box-shadow: var(--neu-sm); }
-.review-chip.black { background: var(--black-eval); color: var(--white-eval); box-shadow: var(--neu-sm); border: none; }
+.review-chip.white { background: var(--white-eval); color: #20241f; box-shadow: var(--neu-sm); filter: var(--drop-sm); }
+.review-chip.black { background: var(--black-eval); color: var(--white-eval); box-shadow: var(--neu-sm); filter: var(--drop-sm); border: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .btn, .board-nav-bar .nav-btn { transition: none; }
