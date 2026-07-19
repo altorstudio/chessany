@@ -25,7 +25,7 @@ export function MoveFeedback({ move, onShowLine, onShowRefutation }: Props) {
   const hasRefutation = !!move.refutation?.length;
 
   return (
-    <div className="move-feedback" style={{ borderLeftColor: meta.color }}>
+    <div className="move-feedback">
       <div className="move-feedback-head">
         <span className="move-feedback-badge" style={{ background: meta.color }}>{meta.icon}</span>
         <span className="move-feedback-move">{moveNo}{dots} {figurine(move.san)}</span>

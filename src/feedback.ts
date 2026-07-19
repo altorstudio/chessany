@@ -237,9 +237,9 @@ export function playSound(kind: MoveKind, setOverride?: SoundSet) {
       land("Capture", 0.9);
       break;
     case "castle":
-      // Two pieces land: king, then rook.
-      land("Move", 0.8);
-      land("Move", 0.6, 0.09);
+      // One landing sound — a double knock reads as an echo artifact, not as
+      // "two pieces", especially with the recorded samples.
+      land("Move", 0.85);
       break;
     case "promote":
       // The piece lands, then a gentle rising two-note chime (C5 → G5).

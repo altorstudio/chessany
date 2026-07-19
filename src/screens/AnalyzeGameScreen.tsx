@@ -658,7 +658,7 @@ export function AnalyzeGameScreen() {
               <>
                 <textarea className="pgn-input" value={pgnText} onChange={(e) => setPgnText(e.target.value)} placeholder="Paste PGN here…" rows={7} />
                 <input ref={fileRef} type="file" accept=".pgn,.txt" hidden onChange={onFile} />
-                <button className="link-btn" onClick={() => fileRef.current?.click()}>📄 Choose PGN file</button>
+                <button className="link-btn" onClick={() => fileRef.current?.click()}>Choose PGN file</button>
                 {error && <div className="game-state warn">{error}</div>}
                 <div className="row">
                   <button className="btn primary" onClick={() => load(pgnText)} disabled={!pgnText.trim()}>Load PGN</button>
@@ -775,12 +775,12 @@ export function AnalyzeGameScreen() {
                         </span>
                       </div>
                       <div className="report-config-row">
-                        <span>⚡ Quick</span>
+                        <span>Quick</span>
                         <span>depth {REPORT_MODES.quick.depth} · ≤{REPORT_MODES.quick.movetime / 1000}s/move</span>
                       </div>
                       <div className="report-config-row">
-                        <span>🔬 Deep</span>
-                        <span>depth {REPORT_MODES.deep.refine.depth} on key positions · scout depth {REPORT_MODES.deep.depth}</span>
+                        <span>Deep</span>
+                        <span>depth {REPORT_MODES.deep.refine.depth} on key moments</span>
                       </div>
                     </div>
                   )}
@@ -804,15 +804,15 @@ export function AnalyzeGameScreen() {
                       <button className="btn primary block" onClick={() => setShowReport(true)}>Open full report</button>
                       <div className="report-rerun-row">
                         <span>Re-analyze:</span>
-                        <button className="link-btn" onClick={() => runReport("quick")}>⚡ Quick</button>
-                        <button className="link-btn" onClick={() => runReport("deep")}>🔬 Deep</button>
+                        <button className="link-btn" onClick={() => runReport("quick")}>Quick</button>
+                        <button className="link-btn" onClick={() => runReport("deep")}>Deep</button>
                       </div>
                     </>
                   ) : (
                     <div className="analyze-cta">
                       <p className="analyze-cta-title">Analyze this game</p>
-                      <button className="btn primary block" onClick={() => runReport("quick")}>⚡ Quick analysis</button>
-                      <button className="btn block" onClick={() => runReport("deep")}>🔬 Deep analysis</button>
+                      <button className="btn primary block" onClick={() => runReport("quick")}>Quick analysis</button>
+                      <button className="btn block" onClick={() => runReport("deep")}>Deep analysis</button>
                     </div>
                   )}
                 </div>

@@ -56,9 +56,11 @@
   --black-eval: #3b433a;
   --header-border: #dfe3d7;
   --toggle-off: #cdd3c6;
-  --neu-out: 10px 10px 24px rgba(146, 155, 136, .5), -9px -9px 20px rgba(255, 255, 255, 1);
-  --neu-sm: 5px 5px 12px rgba(146, 155, 136, .48), -5px -5px 10px rgba(255, 255, 255, .95);
-  --neu-in: inset 4px 4px 9px rgba(136, 145, 126, .5), inset -4px -4px 9px rgba(255, 255, 255, .95);
+  /* Light shadows stay soft (never full-white) and tight enough that scroll
+     containers don't clip them into hard "leaked" white edges. */
+  --neu-out: 8px 8px 18px rgba(146, 155, 136, .42), -6px -6px 14px rgba(255, 255, 255, .85);
+  --neu-sm: 4px 4px 10px rgba(146, 155, 136, .4), -3px -3px 8px rgba(255, 255, 255, .8);
+  --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -3px -3px 7px rgba(255, 255, 255, .75);
 }
 
 * { box-sizing: border-box; }
@@ -287,7 +289,7 @@ html, body, #root {
 
 /* Coach toggle row inside the Play panel + the pause-on-mistake card. */
 .coach-row { border-top: 1px solid var(--border-soft); margin-top: 4px; padding-top: 12px; padding-bottom: 12px; }
-.coach-pause { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--cls-color, var(--accent)); border-radius: 12px; padding: 12px 14px; }
+.coach-pause { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; }
 .coach-pause-label { display: block; font-size: 12.5px; color: var(--text-2); margin-bottom: 10px; }
 .coach-pause .row { margin: 0; }
 
@@ -526,9 +528,9 @@ html, body, #root {
 .game-over-icon { font-size: 40px; line-height: 1; margin: 8px 0 10px; }
 .game-over-title { font-size: 18px; font-weight: 800; color: var(--text); }
 .game-over-detail { font-size: 13px; color: var(--text-dim); margin: 4px 0 16px; }
-.play-panel.game-over.win { border-left: 3px solid var(--accent); }
-.play-panel.game-over.loss { border-left: 3px solid #d05656; }
-.play-panel.game-over.draw { border-left: 3px solid #e0b03b; }
+.play-panel.game-over.win .game-over-title { color: var(--accent-light); }
+.play-panel.game-over.loss .game-over-title { color: #d05656; }
+.play-panel.game-over.draw .game-over-title { color: #e0b03b; }
 .play-panel.game-over .row { justify-content: center; }
 
 /* Analysis */
@@ -840,15 +842,16 @@ html, body, #root {
 .report-engine { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 13px; color: var(--text-dim); }
 .report-config {
   background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin-bottom: 12px;
+  border: none;
+  box-shadow: var(--neu-in);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
   font-size: 12px;
 }
-.report-config-row { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
-.report-config-row > span:first-child { color: var(--text-dim); }
-.report-config-row > span:last-child { font-variant-numeric: tabular-nums; }
+.report-config-row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 3px 0; }
+.report-config-row > span:first-child { color: var(--text-dim); white-space: nowrap; }
+.report-config-row > span:last-child { font-variant-numeric: tabular-nums; text-align: right; }
 .report-engine select {
   flex: 1;
   background: var(--surface-2);
@@ -875,6 +878,10 @@ html, body, #root {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
+  /* Room for the soft shadows — an overflow container otherwise slices the
+     top/left glow of the first card into a hard white edge. */
+  padding: 14px 10px 24px 14px;
+  margin: -14px -10px 0 -14px;
   /* Always reserve the scrollbar's space so the panel width never jumps as the
      content height changes (e.g. the move-feedback message or eval updating). */
   scrollbar-gutter: stable;
@@ -1068,7 +1075,6 @@ html, body, #root {
   pointer-events: none;
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   border: 1px solid var(--border-strong);
-  border-left-width: 3px;
   border-radius: 8px;
   padding: 4px 12px;
   font-size: 14px;
@@ -1320,7 +1326,6 @@ html, body, #root {
 .move-feedback {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 10px;
@@ -1511,10 +1516,17 @@ html, body, #root {
 
 /* Everything is the same material — no borders, big soft extrusion, chunky
    corners. Definition comes from light, not lines. */
-.panel, .modal, .review-bar, .coach-pause, .move-feedback, .line-preview {
+.panel, .review-bar, .coach-pause, .move-feedback, .line-preview {
   border-color: transparent;
   border-radius: 18px;
   box-shadow: var(--neu-out);
+}
+/* Modals float OVER the dimmed backdrop, not on the material — the neumorphic
+   white glow reads as a fog leak there. Plain downward elevation instead. */
+.modal {
+  border-color: transparent;
+  border-radius: 20px;
+  box-shadow: 0 24px 70px rgba(10, 14, 10, .45), 0 4px 16px rgba(10, 14, 10, .25);
 }
 .report-graph { box-shadow: var(--neu-out); border-color: transparent; }
 .board-wrap { box-shadow: var(--neu-out); border-radius: 4px; }
@@ -1600,3 +1612,13 @@ button:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 55%, 
 /* Light-theme legibility touches. */
 .player-dot.light { border: 1.5px solid var(--border-strong); }
 .player-elo { color: var(--on-accent); }
+
+/* Shadow-clipping fixes: soft glows need room inside every scroll container,
+   and no stray hairlines on soft surfaces. */
+.autoplay-move { border-color: transparent; }
+.side-col { padding-top: 6px; }
+@media (max-width: 820px) {
+  /* The mobile side column scrolls — pad it so the first card's glow (and the
+     board column edges above) aren't sliced into hard lines. */
+  .board-screen .side-col { padding: 10px 8px calc(10px + env(safe-area-inset-bottom)) 10px; }
+}

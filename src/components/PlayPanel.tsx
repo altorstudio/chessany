@@ -63,7 +63,7 @@ export function PlayPanel() {
           <button className="btn" onClick={() => newGame(other)}>Switch sides</button>
         </div>
         {pgn && (
-          <button className="btn block" onClick={() => openAnalysis(pgn)}>📈 Analyze this game</button>
+          <button className="btn block" onClick={() => openAnalysis(pgn)}>Analyze this game</button>
         )}
       </div>
     );
