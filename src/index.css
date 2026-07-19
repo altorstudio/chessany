@@ -58,11 +58,12 @@
   --black-eval: #3b433a;
   --header-border: #dfe3d7;
   --toggle-off: #cdd3c6;
-  /* Light shadows stay soft (never full-white) and tight enough that scroll
-     containers don't clip them into hard "leaked" white edges. */
-  --neu-out: 8px 8px 18px rgba(146, 155, 136, .42), -6px -6px 14px rgba(255, 255, 255, .85);
-  --neu-sm: 4px 4px 10px rgba(146, 155, 136, .4), -3px -3px 8px rgba(255, 255, 255, .8);
-  --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -3px -3px 7px rgba(255, 255, 255, .75);
+  /* Same bevel model as Night: depth from the soft dark drop shadow, light
+     from an inset top-left bevel that hugs the corner radius — outer white
+     glows render square-cornered on some GPUs/WebViews. */
+  --neu-out: 8px 8px 18px rgba(146, 155, 136, .45), inset 1.5px 1.5px 0 rgba(255, 255, 255, .95);
+  --neu-sm: 4px 4px 10px rgba(146, 155, 136, .42), inset 1px 1px 0 rgba(255, 255, 255, .95);
+  --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -1px -1px 0 rgba(255, 255, 255, .9);
 }
 
 * { box-sizing: border-box; }
