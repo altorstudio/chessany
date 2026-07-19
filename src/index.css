@@ -33,8 +33,8 @@
   --neu-in: inset 4px 4px 9px rgba(8, 10, 8, .55), inset -1px -1px 0 rgba(255, 255, 255, .05);
   /* Depth via drop-shadow(): it blurs the element's real silhouette (radius
      included), so shadow corners can NEVER rasterize square. */
-  --drop: drop-shadow(0 9px 10px rgba(8, 10, 8, .45));
   --drop-sm: drop-shadow(0 4px 5px rgba(8, 10, 8, .4));
+  --shadow-card: 0 10px 22px rgba(8, 10, 8, .5);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
@@ -66,11 +66,12 @@
   --neu-out: inset 0.1px 0.1px 0 rgba(255, 255, 255, .95);
   --neu-sm: inset 0.1px 0.1px 0 rgba(255, 255, 255, .95);
   --neu-in: inset 3px 3px 8px rgba(136, 145, 126, .42), inset -0.1px -0.1px 0 rgba(255, 255, 255, .9);
-  --drop: drop-shadow(0 8px 9px rgba(146, 155, 136, .5));
   --drop-sm: drop-shadow(0 4px 4px rgba(146, 155, 136, .45));
+  --shadow-card: 0 8px 18px rgba(146, 155, 136, .5);
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+button, select, .rail-item, .tree-cell, .tree-move, .line-move { touch-action: manipulation; }
 
 html, body, #root {
   margin: 0;
@@ -1460,7 +1461,7 @@ html, body, #root {
     border-top: 3px solid var(--cls-color, var(--accent));
     border-radius: 16px 16px 0 0;
     padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
-    filter: drop-shadow(0 -8px 14px rgba(0, 0, 0, .4));
+    box-shadow: 0 -10px 24px rgba(0, 0, 0, .4);
   }
   .coach-pause-label { font-size: 13px; margin-bottom: 12px; text-align: center; }
   .coach-pause .row { gap: 10px; }
@@ -1526,18 +1527,19 @@ html, body, #root {
 .panel, .review-bar, .coach-pause, .move-feedback, .line-preview {
   border-color: transparent;
   border-radius: 18px;
-  box-shadow: var(--neu-out);
-  filter: var(--drop);
+  /* bevel + a vertical card shadow in ONE box-shadow list — no filter: filters
+     on large scroll/board containers re-rasterize the whole subtree per frame */
+  box-shadow: var(--neu-out), var(--shadow-card);
 }
 /* Modals float OVER the dimmed backdrop, not on the material — the neumorphic
    white glow reads as a fog leak there. Plain downward elevation instead. */
 .modal {
   border-color: transparent;
   border-radius: 20px;
-  filter: drop-shadow(0 18px 30px rgba(10, 14, 10, .4));
+  box-shadow: 0 18px 44px rgba(10, 14, 10, .4);
 }
-.report-graph { box-shadow: var(--neu-out); filter: var(--drop); border-color: transparent; }
-.board-wrap { filter: var(--drop); border-radius: 4px; }
+.report-graph { box-shadow: var(--neu-out), var(--shadow-card); border-color: transparent; }
+.board-wrap { box-shadow: var(--shadow-card); border-radius: 4px; }
 .rail-toggle { border-color: transparent; box-shadow: var(--neu-sm); filter: var(--drop-sm); border-radius: 13px; }
 
 /* Buttons: puffy pebbles; pressing sinks them into the surface. */
@@ -1547,7 +1549,8 @@ html, body, #root {
   border-radius: 13px;
   box-shadow: var(--neu-sm);
   filter: var(--drop-sm);
-  transition: box-shadow .12s ease, transform .12s ease, filter .12s ease;
+  /* transform/box-shadow only — animating filter re-rasterizes every frame */
+  transition: box-shadow .12s ease, transform .12s ease;
 }
 .btn:hover:not(:disabled) { color: var(--accent-light); }
 .btn:active:not(:disabled) { box-shadow: var(--neu-in); filter: none; transform: translateY(1px); }

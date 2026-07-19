@@ -35,7 +35,11 @@ export function useFitViewport(ref: RefObject<HTMLElement>, opts: Options = {}) 
       // blur / next render re-fits once the keyboard is gone.
       const tag = document.activeElement?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
-      el.style.height = `${Math.max(min, window.innerHeight - el.getBoundingClientRect().top)}px`;
+      const target = `${Math.max(min, window.innerHeight - el.getBoundingClientRect().top)}px`;
+      // Only write when it actually changed — this hook runs on every render
+      // (live analysis renders many times a second), and an unconditional style
+      // write invalidates layout each time: visible jank on phones.
+      if (el.style.height !== target) el.style.height = target;
     };
     fit();
     window.addEventListener("resize", fit);
