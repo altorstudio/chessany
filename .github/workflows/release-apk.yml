@@ -1,9 +1,10 @@
 name: Release APK
 
-# Build the Android APK and attach it to a GitHub Release whenever a version tag
-# is pushed (e.g. `git tag v0.1.0 && git push --tags`). Pushes to main and manual
-# runs (Actions tab) build the APK and upload it as a downloadable artifact
-# (chessany-dev-<sha>.apk) for testing — without creating a release.
+# Build the Android APK and release it. Every push to main auto-bumps the patch
+# version (latest v* tag + 1), tags the commit, and attaches the APK to a GitHub
+# Release. Pushing a version tag by hand still works (that exact version is
+# released). Manual runs (Actions tab) build the APK and upload it as a
+# downloadable artifact (chessany-dev-<sha>.apk) for testing — no tag/release.
 on:
   push:
     tags: ['v*']
@@ -24,6 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history so the version-bump step can see the latest v* tag.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -83,11 +87,20 @@ jobs:
           sed -i '/org\.gradle\.java\.home/d' android/gradle.properties
           cd android && ./gradlew assembleDebug --no-daemon
 
-      - name: Name the APK
+      - name: Version + name the APK
         id: apk
         run: |
-          VERSION="${GITHUB_REF_TYPE/tag/$GITHUB_REF_NAME}"
-          [ "$GITHUB_REF_TYPE" = "tag" ] && VERSION="$GITHUB_REF_NAME" || VERSION="dev-${GITHUB_SHA::7}"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            # Hand-pushed tag: release exactly that version.
+            VERSION="$GITHUB_REF_NAME"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            # Push to main: auto-bump the patch of the latest v* tag.
+            LATEST=$(git tag -l 'v*' --sort=-v:refname | head -1)
+            VERSION=$(echo "${LATEST:-v0.0.0}" | awk -F. '{printf "%s.%s.%d", $1, $2, $3+1}')
+          else
+            # Manual run: test artifact only, never tagged/released.
+            VERSION="dev-${GITHUB_SHA::7}"
+          fi
           OUT="chessany-${VERSION}.apk"
           cp android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
           echo "path=$OUT" >> "$GITHUB_OUTPUT"
@@ -99,10 +112,14 @@ jobs:
           name: ${{ steps.apk.outputs.version }}-apk
           path: ${{ steps.apk.outputs.path }}
 
-      - name: Attach APK to the Release (tags only)
-        if: github.ref_type == 'tag'
+      # For main pushes, tag_name doesn't exist yet — the action creates the tag
+      # at this commit along with the Release (a bot-created tag doesn't
+      # re-trigger this workflow, so there's no double build).
+      - name: Tag + Release with APK (tag pushes & main pushes)
+        if: github.ref_type == 'tag' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.apk.outputs.version }}
           files: ${{ steps.apk.outputs.path }}
           generate_release_notes: true
           fail_on_unmatched_files: true
