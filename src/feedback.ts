@@ -284,6 +284,20 @@ export function haptic(kind: MoveKind) {
   }
 }
 
+// UI selection tick: the lightest possible tap, paired with the visual press
+// state on controls (tab switches, toggles, nav). Kept OFF move-navigation
+// paths that already fire moveFeedback/classificationHaptic, so nothing buzzes
+// twice.
+export function tapHaptic() {
+  if (!useFeedback.getState().haptics) return;
+  try {
+    if (Capacitor.isNativePlatform()) void Haptics.impact({ style: ImpactStyle.Light });
+    else vibrate(4);
+  } catch {
+    /* best-effort */
+  }
+}
+
 // A gentle quality cue for notable moves. Ordinary good moves get no extra buzz
 // (just the light move tap) — only inaccuracies/mistakes/blunders are flagged,
 // with a single soft impact rather than the jarring system "notification" buzz.

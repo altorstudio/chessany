@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { tapHaptic } from "../feedback";
 
 interface Props {
   onFirst?: () => void;
@@ -48,7 +49,7 @@ export function BoardNavBar({
       {onTogglePlay && (
         <button
           className={`btn nav-btn${playing ? " primary" : ""}`}
-          onClick={onTogglePlay}
+          onClick={() => { tapHaptic(); onTogglePlay(); }}
           disabled={atEnd && !playing}
           aria-label={playing ? "Pause" : "Auto-play"}
         >
@@ -68,7 +69,7 @@ export function BoardNavBar({
       {onFlip && (
         <button
           className="btn nav-btn"
-          onClick={onFlip}
+          onClick={() => { tapHaptic(); onFlip(); }}
           aria-label="Flip board"
         >
           ⇅

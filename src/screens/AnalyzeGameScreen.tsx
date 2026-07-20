@@ -33,7 +33,7 @@ import { bestMoveArrows, classificationShape } from "../game/shapes";
 import { normalizePgn } from "../game/pgn";
 import { MoveFeedback } from "../components/MoveFeedback";
 import { BoardNavBar } from "../components/BoardNavBar";
-import { moveFeedback, classificationHaptic, type FeedbackLevel } from "../feedback";
+import { moveFeedback, classificationHaptic, tapHaptic, type FeedbackLevel } from "../feedback";
 import { upsertGame, findGameByPgn, listGames } from "../archive";
 import { useFitViewport } from "../hooks/useFitViewport";
 
@@ -650,9 +650,9 @@ export function AnalyzeGameScreen() {
         {!tree ? (
           <div className="panel">
             <div className="loader-tabs">
-              <button className={`loader-tab${tab === "pgn" ? " active" : ""}`} onClick={() => setTab("pgn")}>PGN</button>
-              <button className={`loader-tab${tab === "lichess" ? " active" : ""}`} onClick={() => setTab("lichess")}>Lichess</button>
-              <button className={`loader-tab${tab === "chesscom" ? " active" : ""}`} onClick={() => setTab("chesscom")}>Chess.com</button>
+              <button className={`loader-tab${tab === "pgn" ? " active" : ""}`} onClick={() => { tapHaptic(); setTab("pgn"); }}>PGN</button>
+              <button className={`loader-tab${tab === "lichess" ? " active" : ""}`} onClick={() => { tapHaptic(); setTab("lichess"); }}>Lichess</button>
+              <button className={`loader-tab${tab === "chesscom" ? " active" : ""}`} onClick={() => { tapHaptic(); setTab("chesscom"); }}>Chess.com</button>
             </div>
             {tab === "pgn" ? (
               <>
@@ -689,8 +689,8 @@ export function AnalyzeGameScreen() {
         ) : (
           <>
             <div className="panel-tabs">
-              <button className={`panel-tab${panelTab === "moves" ? " active" : ""}`} onClick={() => setPanelTab("moves")}>Moves</button>
-              <button className={`panel-tab${panelTab === "report" ? " active" : ""}`} onClick={() => setPanelTab("report")}>
+              <button className={`panel-tab${panelTab === "moves" ? " active" : ""}`} onClick={() => { tapHaptic(); setPanelTab("moves"); }}>Moves</button>
+              <button className={`panel-tab${panelTab === "report" ? " active" : ""}`} onClick={() => { tapHaptic(); setPanelTab("report"); }}>
                 Report{progress ? "…" : ""}
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { playSound, useFeedback, type BoardTheme, type PieceSet, type SoundSet, type Theme } from "../feedback";
+import { playSound, tapHaptic, useFeedback, type BoardTheme, type PieceSet, type SoundSet, type Theme } from "../feedback";
 
 // "Board" is real recorded wood (Kenney CC0, the default); "Wood" is the
 // built-in synth; the rest are lichess Enigmahack (AGPLv3+) sets fetched to
@@ -37,7 +37,8 @@ const PIECES: { id: PieceSet; label: string }[] = [
 
 function Toggle({ on, onClick, label, sub }: { on: boolean; onClick: () => void; label: string; sub?: string }) {
   return (
-    <button className="pref-row" onClick={onClick}>
+    // Tick fires after the flip so enabling haptics buzzes and disabling doesn't.
+    <button className="pref-row" onClick={() => { onClick(); tapHaptic(); }}>
       <span className="pref-label">
         {label}
         {sub && <span className="pref-sub">{sub}</span>}

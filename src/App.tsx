@@ -93,13 +93,15 @@ export default function App() {
           {!probed ? (
             <div className="game-state">Loading engine…</div>
           ) : (
-            <>
+            /* Keyed per view so switching screens replays the enter transition
+               (pose-to-pose staging; the transform clears once it finishes). */
+            <div className="screen" key={analyzing ? "analysisBoard" : view}>
               {view === "play" && (analyzing ? <AnalysisBoardScreen /> : <PlayScreen />)}
               {view === "analyzeGame" && <AnalyzeGameScreen />}
               {view === "boardEditor" && <BoardEditorScreen />}
               {view === "archive" && <ArchiveScreen />}
               {view === "openings" && <OpeningsScreen />}
-            </>
+            </div>
           )}
         </div>
       </main>
