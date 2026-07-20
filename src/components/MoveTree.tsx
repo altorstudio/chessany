@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties } from "react";
+import { memo, useEffect, useRef, type CSSProperties } from "react";
 import { CLASS_META, type MoveClass } from "../game/report";
 import { figurine, type TreeNode, type TreePath } from "../game/tree";
 
@@ -98,7 +98,12 @@ interface Entry {
 
 const emptyCell = <span className="tree-cell empty" />;
 
-export function MoveTree({
+// memo: the analyze screen re-renders on every (throttled) engine update, and
+// re-flattening + re-rendering a whole game's rows each time is the biggest
+// chunk of that work. Callers must pass a stable onJump/classOf (useCallback/
+// useMemo); tree mutations are always accompanied by a `current` change, so
+// prop equality is a safe skip condition.
+export const MoveTree = memo(function MoveTree({
   root,
   current,
   onJump,
@@ -173,4 +178,4 @@ export function MoveTree({
   }
 
   return <div className="tree-grid" ref={wrapRef}>{rows}</div>;
-}
+});

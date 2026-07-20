@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { Chess } from "chess.js";
 import { ChessgroundBoard } from "../components/ChessgroundBoard";
@@ -170,6 +170,9 @@ export function AnalyzeGameScreen() {
 
   // Stop auto-play / looping replay — called on every manual interaction.
   const stopAuto = () => { setAutoplay(false); setLoop(false); };
+  // Stable jump handler so the memoized MoveTree isn't re-rendered by the
+  // engine's periodic line updates (only by real position/report changes).
+  const jumpTo = useCallback((p: TreePath) => { setAutoplay(false); setLoop(false); setPath(p); }, []);
 
   // Cancel an in-flight report (its engines stop; its result is discarded).
   const cancelReport = () => {
@@ -650,9 +653,9 @@ export function AnalyzeGameScreen() {
         {!tree ? (
           <div className="panel">
             <div className="loader-tabs">
-              <button className={`loader-tab${tab === "pgn" ? " active" : ""}`} onClick={() => { tapHaptic(); setTab("pgn"); }}>PGN</button>
-              <button className={`loader-tab${tab === "lichess" ? " active" : ""}`} onClick={() => { tapHaptic(); setTab("lichess"); }}>Lichess</button>
-              <button className={`loader-tab${tab === "chesscom" ? " active" : ""}`} onClick={() => { tapHaptic(); setTab("chesscom"); }}>Chess.com</button>
+              <button className={`loader-tab${tab === "pgn" ? " active" : ""}`} onPointerDown={tapHaptic} onClick={() => setTab("pgn")}>PGN</button>
+              <button className={`loader-tab${tab === "lichess" ? " active" : ""}`} onPointerDown={tapHaptic} onClick={() => setTab("lichess")}>Lichess</button>
+              <button className={`loader-tab${tab === "chesscom" ? " active" : ""}`} onPointerDown={tapHaptic} onClick={() => setTab("chesscom")}>Chess.com</button>
             </div>
             {tab === "pgn" ? (
               <>
@@ -689,8 +692,8 @@ export function AnalyzeGameScreen() {
         ) : (
           <>
             <div className="panel-tabs">
-              <button className={`panel-tab${panelTab === "moves" ? " active" : ""}`} onClick={() => { tapHaptic(); setPanelTab("moves"); }}>Moves</button>
-              <button className={`panel-tab${panelTab === "report" ? " active" : ""}`} onClick={() => { tapHaptic(); setPanelTab("report"); }}>
+              <button className={`panel-tab${panelTab === "moves" ? " active" : ""}`} onPointerDown={tapHaptic} onClick={() => setPanelTab("moves")}>Moves</button>
+              <button className={`panel-tab${panelTab === "report" ? " active" : ""}`} onPointerDown={tapHaptic} onClick={() => setPanelTab("report")}>
                 Report{progress ? "…" : ""}
               </button>
             </div>
@@ -743,7 +746,7 @@ export function AnalyzeGameScreen() {
                     {!onMain && (
                       <div className="variation-hint">Exploring a variation — tap any move to jump back.</div>
                     )}
-                    <MoveTree root={tree} current={path} onJump={(p) => { stopAuto(); setPath(p); }} classOf={classOf} />
+                    <MoveTree root={tree} current={path} onJump={jumpTo} classOf={classOf} />
                   </div>
                 </>
               )}

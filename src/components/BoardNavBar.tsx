@@ -49,7 +49,8 @@ export function BoardNavBar({
       {onTogglePlay && (
         <button
           className={`btn nav-btn${playing ? " primary" : ""}`}
-          onClick={() => { tapHaptic(); onTogglePlay(); }}
+          onPointerDown={tapHaptic}
+          onClick={onTogglePlay}
           disabled={atEnd && !playing}
           aria-label={playing ? "Pause" : "Auto-play"}
         >
@@ -69,7 +70,8 @@ export function BoardNavBar({
       {onFlip && (
         <button
           className="btn nav-btn"
-          onClick={() => { tapHaptic(); onFlip(); }}
+          onPointerDown={tapHaptic}
+          onClick={onFlip}
           aria-label="Flip board"
         >
           ⇅

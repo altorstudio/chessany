@@ -93,7 +93,7 @@ export function PlayPanel() {
             <button className="btn" onClick={undo} disabled={engineThinking}>Undo</button>
             <button className="btn" onClick={flip}>Flip</button>
           </div>
-          <button className="pref-row coach-row" onClick={() => { setCoach(!coach); tapHaptic(); }}>
+          <button className="pref-row coach-row" onPointerDown={tapHaptic} onClick={() => setCoach(!coach)}>
             <span className="pref-label">Coach<span className="pref-sub">Flag your mistakes as you play</span></span>
             <span className={`pref-track${coach ? " on" : ""}`}><span className="pref-knob" /></span>
           </button>
@@ -113,7 +113,7 @@ export function PlayPanel() {
               ))}
             </select>
           </label>
-          <button className="pref-row coach-row" onClick={() => { setCoach(!coach); tapHaptic(); }}>
+          <button className="pref-row coach-row" onPointerDown={tapHaptic} onClick={() => setCoach(!coach)}>
             <span className="pref-label">Coach<span className="pref-sub">Flag your mistakes as you play</span></span>
             <span className={`pref-track${coach ? " on" : ""}`}><span className="pref-knob" /></span>
           </button>

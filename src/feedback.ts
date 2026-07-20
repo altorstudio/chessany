@@ -1,6 +1,17 @@
 import { create } from "zustand";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+
+// Android-only in-repo plugin exposing the OS's predefined VibrationEffects
+// (EFFECT_TICK/CLICK/…) — device-calibrated and crisp, unlike the mushy 50ms
+// waveforms @capacitor/haptics synthesizes for "impact" on Android. iOS keeps
+// @capacitor/haptics (UIImpactFeedbackGenerator is already a real Taptic tap).
+type TickEffect = "tick" | "click" | "heavyClick" | "doubleClick";
+interface HapticTickPlugin {
+  tick(options?: { effect?: TickEffect }): Promise<void>;
+}
+const HapticTick = registerPlugin<HapticTickPlugin>("HapticTick");
+const hasNativeTick = Capacitor.isPluginAvailable("HapticTick");
 
 // Move/board feedback: synthesized sound (Web Audio — no asset files) + haptics
 // (Capacitor on device, navigator.vibrate on the web). Both user-toggleable.
@@ -274,7 +285,9 @@ export function haptic(kind: MoveKind) {
   // Keep it subtle: a light tap for ordinary moves, one slightly firmer tap only
   // when the game ends. No buzzes or patterns.
   try {
-    if (Capacitor.isNativePlatform()) {
+    if (hasNativeTick) {
+      void HapticTick.tick({ effect: kind === "gameEnd" ? "heavyClick" : "click" });
+    } else if (Capacitor.isNativePlatform()) {
       void Haptics.impact({ style: kind === "gameEnd" ? ImpactStyle.Medium : ImpactStyle.Light });
     } else {
       vibrate(kind === "gameEnd" ? 12 : 6);
@@ -291,7 +304,8 @@ export function haptic(kind: MoveKind) {
 export function tapHaptic() {
   if (!useFeedback.getState().haptics) return;
   try {
-    if (Capacitor.isNativePlatform()) void Haptics.impact({ style: ImpactStyle.Light });
+    if (hasNativeTick) void HapticTick.tick({ effect: "tick" });
+    else if (Capacitor.isNativePlatform()) void Haptics.impact({ style: ImpactStyle.Light });
     else vibrate(4);
   } catch {
     /* best-effort */
@@ -305,7 +319,11 @@ export type FeedbackLevel = "good" | "warn" | "bad";
 export function classificationHaptic(level: FeedbackLevel) {
   if (!useFeedback.getState().haptics) return;
   try {
-    if (Capacitor.isNativePlatform()) {
+    if (hasNativeTick) {
+      // A double click for blunders is unmistakably "something went wrong"
+      // without resorting to the jarring system notification buzz.
+      void HapticTick.tick({ effect: level === "bad" ? "doubleClick" : level === "warn" ? "heavyClick" : "click" });
+    } else if (Capacitor.isNativePlatform()) {
       void Haptics.impact({ style: level === "bad" ? ImpactStyle.Medium : ImpactStyle.Light });
     } else {
       vibrate(level === "bad" ? 14 : level === "warn" ? 10 : 6);

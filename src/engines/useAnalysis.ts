@@ -28,6 +28,22 @@ export function useAnalysis(fen: string, screenEnabled: boolean): EngineInfo[] {
     const engine = getEngine(engineId);
     setLines([]);
 
+    // Throttle UI updates: a searching engine emits dozens of info lines per
+    // second (per PV), and pushing each one through setState re-renders the
+    // whole screen (move list, gauge, board arrows) — that's the main-thread
+    // stutter felt while navigating moves. Accumulate into a buffer and flush
+    // at most every FLUSH_MS; the first update after a quiet spell flushes
+    // immediately so a new position still evaluates visibly fast.
+    const FLUSH_MS = 120;
+    const pending: EngineInfo[] = [];
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastFlush = 0;
+    const flush = () => {
+      flushTimer = null;
+      lastFlush = performance.now();
+      setLines(pending.slice());
+    };
+
     // Non-interruptible engines block their worker for the whole
     // search, so a long search time makes rapid position changes pile up and
     // feel stuck. Cap their live-analysis search to stay responsive.
@@ -45,20 +61,20 @@ export function useAnalysis(fen: string, screenEnabled: boolean): EngineInfo[] {
       }
       engine.analyze(fen, { multipv, movetime, hash: hashMb }, (info) => {
         if (cancelled) return;
-        setLines((cur) => {
-          const next = cur.slice();
-          const prev = next[info.multipv - 1];
-          // Some updates (bound scores) carry a score but no PV — keep the last
-          // known PV so the best-move arrows don't flicker out.
-          next[info.multipv - 1] =
-            info.pv.length === 0 && prev?.pv?.length ? { ...info, pv: prev.pv } : info;
-          return next;
-        });
+        const prev = pending[info.multipv - 1];
+        // Some updates (bound scores) carry a score but no PV — keep the last
+        // known PV so the best-move arrows don't flicker out.
+        pending[info.multipv - 1] =
+          info.pv.length === 0 && prev?.pv?.length ? { ...info, pv: prev.pv } : info;
+        if (flushTimer == null) {
+          flushTimer = setTimeout(flush, Math.max(0, FLUSH_MS - (performance.now() - lastFlush)));
+        }
       });
     })();
 
     return () => {
       cancelled = true;
+      if (flushTimer != null) clearTimeout(flushTimer);
       engine.stop();
     };
   }, [fen, screenEnabled, on, engineId, searchTimeMs, multipv, hashMb]);
