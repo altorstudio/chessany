@@ -1,13 +1,20 @@
 name: Release APK
 
 # Build the Android APK and attach it to a GitHub Release whenever a version tag
-# is pushed (e.g. `git tag v0.1.0 && git push --tags`). Manual runs (Actions tab)
-# build the APK and upload it as a downloadable artifact for testing — without
-# creating a release.
+# is pushed (e.g. `git tag v0.1.0 && git push --tags`). Pushes to main and manual
+# runs (Actions tab) build the APK and upload it as a downloadable artifact
+# (chessany-dev-<sha>.apk) for testing — without creating a release.
 on:
   push:
     tags: ['v*']
+    branches: [main]
   workflow_dispatch:
+
+# One build per ref: rapid pushes to main cancel the superseded build; tag refs
+# are unique so release builds are never cancelled.
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write  # needed to create the Release
